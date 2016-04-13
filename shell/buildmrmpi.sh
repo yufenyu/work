@@ -1,16 +1,13 @@
-SCRIPTHOME="`pwd`"
-ROOT="$SCRIPTHOME/../.."
+ROOT=$HOME/super
 GITDIR=$ROOT/git
-DLINUXDIR=$GITDIR/dlinux
+LIBDIR=$GITDIR/dlinux/src/lib
+DLINUX_LIB_DIR=ROOT/lib
 MRMPIDIR=$GITDIR/mapreduce/MR-MPI/mrmpi-11Mar13
-BINDIR=$ROOT/bin/
-type=$1
+INSTDIR=$ROOT/bin/mrmpi
 
 function process_args {
 	# Default configuration to use
-	default_vfile=versions.txt
-	default_spmc=eager.b.nwr
-	default_apps=(crmat rmat wordfreq cwordfreq)
+	default_spmc='eager.b.nwr.ncores=64'
 	
 	#Usage
   usage="\
@@ -20,7 +17,6 @@ Usage: $me [OPTION]...
 Manage the compilation of various versions of the MRMPI benchmark suite.
 
 Options:
-    -p APP       Which application to be built.
     -v VERSION   Which version to be built.
     -spmc SPMCVER Which SPMC version to be linked.
     -h           Displays this help message.
@@ -40,42 +36,32 @@ Examples:
     - Build the complete test suite:
         $me
     - Build all apps only using specified configuration:  
-        $me -v detmp
+        $me -v mpich 
       The type of versions include: mpich, detmp
     - Build specified application only using specified configuration:  
-        $me -v detmp -p wordfreq 
+        $me -v detmp -spmc eager.b.nwr 
 	 Note: MPI benchmarks can't use lazy spmc version
 "
 	# Define valid versions
 	valid_versions="mpich detmp"
-	valid_apps="crmat rmat wordfreq cwordfreq"
 	valid_spmcs="eager.nb.wr2.ncores=64 eager.b.wr2.ncores=64 eager.nb.wr1.ncores=64 eager.b.wr1.ncores=64 eager.nb.nwr.ncores=64 eager.b.nwr.ncores=64"
 	
 	# Parse arguments
-	need_arg=""
+ 	need_arg=""
   parsemode="none"
   version=""
   spmc=""
- 	apps=""
 	while [ ! -z "$1" ]; do #there is argument
 		arg="$1"
 		case "${arg}" in
 			"-v" )
 				if [ ! -z "${need_arg}" ]; then
-        	echo "Error: ${parsemode} expected between '${need_arg}' and '-v'"
+					echo "Error: ${parsemode} expected between '${need_arg}' and '-v'"
         	echo "$usage"
        		exit 1
         fi
 				need_arg="-v"
-        parsemode="VERSION";;
-      "-p" )
-        if [ ! -z "${need_arg}" ]; then
-          echo "Error: ${parsemode} expected between '${need_arg}' and '-p'"
-          echo "$usage"
-          exit 1
-        fi
-        need_arg="-p"
-        parsemode="APP";;
+				parsemode="VERSION";;
       "-spmc" )
         if [ ! -z "${need_arg}" ]; then
           echo "Error: ${parsemode} expected between '${need_arg}' and '-spmc'"
@@ -88,7 +74,7 @@ Examples:
         echo "$usage"
         exit 0;;
       *    )
-        if [ ${arg:0:1} != "-" ]; then
+        if [ ${arg:0:1} == "-" ]; then
           echo "Error: Unknown argument '$arg'"
           echo "$usage"
           exit 1
@@ -125,47 +111,22 @@ Examples:
               exit 1
             fi
             spmc="$arg";;
-          "APP"     )
-            parsemode="none"
-            is_valid=""
-            for valid_app in $valid_apps; do
-              if [ "$arg" == "$valid_app" ]; then
-                is_valid="TRUE"
-                break
-              fi
-            done
-            if [ -z "$is_valid" ]; then
-              echo "Error: Unknown app '$srg'."
-              echo "$usage"
-              exit 1
-            fi
-            i=0
-            for app in $default_apps; do
-              if [ "$arg" == "$app" ]; then
-                break
-              fi
-              let i++
-            done
-            apps=($arg)
-            appdirs=(${default_appdirs[$i]});;
-          *         )
+          * )
             echo "Error: Unknown argument '$arg'."
             echo "$usage"
             exit 1;;
 				esac
 		esac
+
 		shift
 	done
+
   if [ ! -z "$need_arg" ]; then
     echo "Error: $parsemode expected after '$need_arg'."
     echo "$usage"
     exit 1
   fi
 
-  if [ -z "$apps" ]; then
-    apps=(${default_apps[*]})
-    appdirs=(${default_appdirs[*]})
-  fi
   if [ -z "$spmc" ]; then
     spmc=$default_spmc
   fi
@@ -173,57 +134,73 @@ Examples:
     i=0
     nver=${#versions[@]}
     while [ $i -lt $nver ]; do
-      if [ "$version" == "${versions[$i]}" ]; then
+      if [ "$version" = "${versions[$i]}" ]; then
         break;
       fi
       let i++
     done
     versions=($version)
-    bldconfs=(${bldconfs[$i]})
-    branches=(${branches[$i]})
-    commits=(${commits[$i]})
   fi
 }
 
-# $1:version, $2:bldconf, $3:branch, $4:commit
+# $1:version
 function build_version {
-	# Applications
-	napp={#apps[@]} #number of applications
+	version="$1"
+	#Get SPMC library
+	if [ $version = "detmp" ]; then
+		spmcfile=${DLINUX_LIB_DIR}/libspmc.a.$spmc
+		mpifile=${DLINUX_LIB_DIR}/libmpi.a.$spmc
+		echo "spmcfile: $spmcfile\n"
+		if [[ ! -f "$spmcfile" || ! -f "$mpifile" ]]; then
+      echo "Error: Cannot find spmc library '$spmcfile'."
+      echo "Build $spmcfile"
+      exit 1
+    fi
+    echo "ln -sf $spmcfile $LIBDIR/libspmc.a."
+    ln -sf $spmcfile $LIBDIR/libspmc.a
+    echo "ln -sf $mpifile $LIBDIR/libmpi.a"
+		ln -sf $mpifile $LIBDIR/libmpi.a
+    spmcv=".$spmc"
+	else
+		spmcv=""
+	fi
+	#build
+	$MRMPIDIR/build.sh $version $spmcv
+	#install
+	apps="crmat rmat cwordfreq wordfreq"
+	for app in $apps; do
+    cp $MRMPIDIR/examples/$version-${app}$spmcv $INSTDIR/$version-$app$spmcv
+  done	
 }
 
+####################################
+#                                  #
+#               MAIN               #
+#                                  #
+####################################
+# Determine script name
+BASENAME="basename"
+eval me=$(${BASENAME} $0)
+# Setup environment
+process_args "$@"
+
+# Build all versions
+nver=${#versions[@]} # number of versions
 
 
-
-
-valid_versions="eager.nb.wr2.ncores=64 eager.b.wr2.ncores=64 eager.nb.wr1.ncores=64 eager.b.wr1.ncores=64 eager.nb.nwr.ncores=64 eager.b.nwr.ncores=64"
-
-for version in $valid_versions
+#echo on
+echo "ROOT: $ROOT"
+echo "Install directory: $INSTDIR"
+mkdir -p $INSTDIR
+echo "Build $nver versions ..."
+cd $MRMPIDIR
+i=0
+while [ $i -lt $nver ] 
 do
-	spmc=$ROOT/lib/libspmc.a.$version
-	ln -sf $spmc $DLINUXDIR/src/lib/libspmc.a 
-
-	mpi=$ROOT/lib/libmpi.a.$version
-	ln -sf $mpi $DLINUXDIR/src/lib/libmpi.a 
-
-	cd $MRMPIDIR/src
-	make clean-dlinux && make dlinux
-	cd $MRMPIDIR/examples
-	rm *.o && make -f Makefile.dlinux
-	mkdir -p $ROOT/bin/mrmpi/dlinux
-	dlinux_benchs=`ls dlinux-*`
-	for bench in $dlinux_benchs
-	do
-		cp $bench $ROOT/bin/mrmpi/dlinux/$bench.$version
-	done
+  echo "Build $i:${versions[$i]}..."
+  build_version ${versions[$i]}
+  let i++
 done
 
-    cd $MRMPIDIR/src
-    make clean-mpich2 && make mpich2
-    cd $MRMPIDIR/examples
-    rm *.o && make -f Makefile.mpich2
-    mkdir -p $ROOT/bin/mrmpi/mpich
-    mpich_benchs=`ls mpich2-*`
-    for bench in $mpich_benchs
-    do      
-        cp $bench $ROOT/bin/mrmpi/mpich/$bench
-    done 
+
+
