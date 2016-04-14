@@ -1,7 +1,7 @@
 ROOT=$HOME/super
 GITDIR=$ROOT/git
 LIBDIR=$GITDIR/dlinux/src/lib
-DLINUX_LIB_DIR=ROOT/lib
+DLINUX_LIB_DIR=$ROOT/lib
 MRMPIDIR=$GITDIR/mapreduce/MR-MPI/mrmpi-11Mar13
 INSTDIR=$ROOT/bin/mrmpi
 
@@ -23,27 +23,26 @@ Options:
 
 VERSION:
     mpich:    	 Depends on libmpi.a
-    detmp:       Depends on libspmc.a, libmpi.a
-
-    Note: You should set DLINUX_LIB_DIR in your environment
-          by modifying ~/.bashrc or /etc/profile.
-          The value of DLINUX_LIB_DIR should be the directory
-          to store required static libraries.
-          For dynamic libraries, you may set LD_LIBRARY_DIR
-          to specify where to locate them.
+    dlinux:       Depends on libspmc.a, libmpi.a
 
 Examples:
     - Build the complete test suite:
         $me
     - Build all apps only using specified configuration:  
         $me -v mpich 
-      The type of versions include: mpich, detmp
+      The type of versions include: mpich, dlinux
     - Build specified application only using specified configuration:  
-        $me -v detmp -spmc eager.b.nwr 
-	 Note: MPI benchmarks can't use lazy spmc version
+        $me -v dlinux -spmc eager.b.nwr 
+	 Note: MPI benchmarks can't use:
+		eager.nb.wr2.ncores=64
+		eager.b.wr2.ncores=64
+		eager.nb.wr1.ncores=64
+		eager.b.wr1.ncores=64
+		eager.nb.nwr.ncores=64
+		eager.b.nwr.ncores=64 
 "
 	# Define valid versions
-	valid_versions="mpich detmp"
+	valid_versions="mpich dlinux"
 	valid_spmcs="eager.nb.wr2.ncores=64 eager.b.wr2.ncores=64 eager.nb.wr1.ncores=64 eager.b.wr1.ncores=64 eager.nb.nwr.ncores=64 eager.b.nwr.ncores=64"
 	
 	# Parse arguments
@@ -147,7 +146,7 @@ Examples:
 function build_version {
 	version="$1"
 	#Get SPMC library
-	if [ $version = "detmp" ]; then
+	if [ $version = "dlinux" ]; then
 		spmcfile=${DLINUX_LIB_DIR}/libspmc.a.$spmc
 		mpifile=${DLINUX_LIB_DIR}/libmpi.a.$spmc
 		echo "spmcfile: $spmcfile\n"
@@ -156,7 +155,7 @@ function build_version {
       echo "Build $spmcfile"
       exit 1
     fi
-    echo "ln -sf $spmcfile $LIBDIR/libspmc.a."
+    echo "ln -sf $spmcfile $LIBDIR/libspmc.a"
     ln -sf $spmcfile $LIBDIR/libspmc.a
     echo "ln -sf $mpifile $LIBDIR/libmpi.a"
 		ln -sf $mpifile $LIBDIR/libmpi.a

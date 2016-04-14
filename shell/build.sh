@@ -13,7 +13,7 @@ if [ $version = "mpich" ]; then
 	done
 fi
 
-if [ $version = "detmp" ]; then
+if [ $version = "dlinux" ]; then
 	cd $ROOT/src
 	make clean-dlinux && make dlinux
 	cd $ROOT/examples
