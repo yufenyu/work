@@ -4,14 +4,14 @@
 TARGET=$1
 NPBDIR="$PWD"
 HOME=$NPBDIR/../../../bin/npb/$TARGET #$HOME/super/bin/npb
-BINDIR=$NPBDIR/bin/dlinux
+BINDIR=$NPBDIR/bin/$TARGET
 app=$2
 class=$3
 spmcv=$4
 
 mkdir -p $HOME
 
-echo "Install $1.$2.* from $BINDIR to $PIOS_HOME"
+echo "Install $1.$2.* from $BINDIR to $HOME"
 echo "$# parameters";
 
 if [ $# -eq 5 ]; then

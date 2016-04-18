@@ -9,6 +9,7 @@ function process_args {
 	# Default configuration to use
 	default_spmc='eager.b.nwr.ncores=64'
 	default_apps=(is mg cg ep ft lu sp bt)
+	default_classes=(A B)
 	
 	#Usage
   usage="\
@@ -18,13 +19,15 @@ Usage: $me [OPTION]...
 Manage the compilation of various versions of the MRMPI benchmark suite.
 
 Options:
-    -v VERSION   Which version to be built.
-    -spmc SPMCVER Which SPMC version to be linked.
-    -h           Displays this help message.
+    -v VERSION      Which version to be built.
+    -spmc SPMCVER   Which SPMC version to be linked.
+    -p APP          Which APP to be built
+    -c CLASS        which dataset Class used
+    -h              Displays this help message.
 
 VERSION:
-    mpich64:    	 Depends on libmpi.a
-    dlinux:       Depends on libspmc.a, libmpi.a
+    mpich64:       Depends on libmpi.a
+    dlinux:        Depends on libspmc.a, libmpi.a
 
 Examples:
     - Build the complete test suite:
@@ -34,6 +37,9 @@ Examples:
       The type of versions include: mpich64, dlinux
     - Build specified application only using specified configuration:  
         $me -v dlinux -spmc eager.b.nwr 
+    - Example: 
+        $me -v mpich64 -p is -c A
+
 	 Note: MPI benchmarks can't use:
 		eager.nb.wr2.ncores=64
 		eager.b.wr2.ncores=64
@@ -46,6 +52,7 @@ Examples:
 	valid_versions="mpich64 dlinux"
 	valid_spmcs="eager.nb.wr2.ncores=64 eager.b.wr2.ncores=64 eager.nb.wr1.ncores=64 eager.b.wr1.ncores=64 eager.nb.nwr.ncores=64 eager.b.nwr.ncores=64"
 	valid_apps="is mg cg ep ft lu sp bt"
+	valid_classes="A B C D E S W"
 	
 	# Parse arguments
  	need_arg=""
@@ -71,7 +78,7 @@ Examples:
           exit 1
         fi
 				need_arg="-p"
-				parsemode="APP"
+				parsemode="APP";;
       "-spmc" )
         if [ ! -z "${need_arg}" ]; then
           echo "Error: ${parsemode} expected between '${need_arg}' and '-spmc'"
@@ -80,6 +87,14 @@ Examples:
         fi
         need_arg="-spmc"
         parsemode="SPMC";;
+			"-c" )
+        if [ ! -z "${need_arg}" ]; then
+          echo "Error: ${parsemode} expected between '${need_arg}' and '-c'"
+          echo "$usage"
+          exit 1
+        fi
+        need_arg="-c"
+        parsemode="CLASS";;
       "-h" )
         echo "$usage"
         exit 0;;
@@ -112,10 +127,11 @@ Examples:
 						for valid_app in $valid_apps; do
 							if [ "$arg" = "$valid_app" ]; then
 								is_valid="TRUE"
+								break
 							fi
 						done
-						if [ -z "$is_valiad" ]; then
-							echo "Error: Unknown app '$srg'."
+						if [ -z "$is_valid" ]; then
+							echo "Error: Unknown app '$arg'."
 							echo "$usage"
 							exit 1
 						fi
@@ -126,6 +142,7 @@ Examples:
 							fi
 							let i++
 						done
+
 						apps=($arg);;
           "SPMC" )
             parsemode="none"
@@ -142,6 +159,21 @@ Examples:
               exit 1
             fi
             spmc="$arg";;
+          "CLASS" )
+            parsemode="none"
+            is_valid=""
+            for valid_class in $valid_classes; do
+              if [ "$arg" = "$valid_class" ]; then
+                is_valid="TRUE"
+                break
+              fi
+            done
+            if [ -z "$is_valid" ]; then
+              echo "Error: Unknown dataset CLASS'$arg'."
+              echo "$usage"
+              exit 1
+            fi
+            classes=($arg);;
           * )
             echo "Error: Unknown argument '$arg'."
             echo "$usage"
@@ -158,13 +190,18 @@ Examples:
     exit 1
   fi
 	
-	if [ ! -z "$apps" ]; then
+	if [ -z "$apps" ]; then
 		apps=(${default_apps[*]})
 	fi
 
   if [ -z "$spmc" ]; then
     spmc=$default_spmc
   fi
+
+	if [ -z "$classes" ]; then
+		classes=(${default_classes[*]})
+	fi
+
   if [ ! -z "$version" ]; then
     i=0
     nver=${#versions[@]}
@@ -202,12 +239,21 @@ function build_version {
 	else
 		spmcv=""
 	fi
-	
+
+	nclass=${#classes[@]}	
 	while [ $j -lt $napp ]
 	do
+		k=0
 		app=${apps[$j]}
-		$NPBDIR/build.sh $version $app A						#build
-		$NPBDIR/install.sh $version $app A $spmcv		#install
+		while [ $k -lt $nclass ]	
+		do
+			class=${classes[$k]}
+			$NPBDIR/build.sh $version $app $class						 #build
+			$NPBDIR/install.sh $version $app $class "$spmcv" #install
+			let k++
+		done
+
+		let j++
 	done
 }
 
