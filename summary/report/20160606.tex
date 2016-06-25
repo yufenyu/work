@@ -1,0 +1,100 @@
+
+本周主要工作：\\
+  1.测试参数DEFAULT\_VALS\_ARR\_LEN(key对应的value数据的长度)，
+  MAX\_LEN(buffer中发送数据的阈值)，不同的值对性能的影响情况\\
+  2.完成map阶段的buffer的数组实现\\
+  3.更新dmr-1.0的设计文档git中papers/determ/spmc/mapreduce/design\\
+
+{\color{red}下周计划：}目前数据的实现只是正对word\_count改进，其他应用程序无法支持，
+为此需要改进buffer的数组实现
+\begin{enumerate}
+  \item 修改insert\_keyva\_map()（目前并没有调用combiner，仅仅是value=value+1）
+  \item 支持有key或者value的copy情况
+  \item 支持不开启combiner的情况
+  \item 调整代码以文件结构，方便编译不同版本的DMR
+\end{enumerate}
+
+\subsection{深度combiner}
+1.常量DEFAULT\_VALS\_ARR\_LEN，每个key默认的value数组的长度。在开启combiner情况下，
+value数组的长度为DEFAULT\_VALS\_ARR\_LEN时，便进行combiner；
+否则，realloc一块更大的空间存放value
+
+2.实验结果显示:DEFAULT\_VALS\_ARR\_LEN=2比DEFAULT\_VALS\_ARR\_LEN=5的性能要好
+通过观察详细的数据，发现值为2的情况下，
+group\_keyval，map\_send, reduce\_recv, insert\_keyval, mem\_map的次数明显降低，
+从而提高性能。
+
+3.分析原因\\
+如图\ref{kv_len}所示，不同的DEFAULT\_VALS\_ARR\_LEN，将直接影响group\_keyval,
+在2的情况下，由于更加频繁的调用combiner，每个key最多有两个value，
+因此group时，需要分配更少的空间，遍历整个buffer花费的时间也会更少，
+最后通过通道发送数据时，发送的次数少
+\begin{figure}[!h]
+    \centering
+    \includegraphics[height=4cm,width= 12cm]{img/dmr-kv_len.png}
+    \caption{不同DEFAULT\_VALS\_ARR\_LEN的影响}
+\label{kv_len}
+\end{figure}
+
+
+\subsection{发送的粒度}
+常量MAX\_LEN表示当buffer中的key/val的个数超过该阈值时，
+便将buffer中的数据发送出去，channel底层的实现时，如果采用lazy方式，
+那么凑满一页便发送出去。
+
+如果MAX\_LEN设置不合理，可能导致一条消息被分成两次发送，由于采用lazy策略，
+第二条消息需要满一页再发送，这样接受端被阻塞
+
+测试的结果显示MAX\_LEN为160时具有较好的性能
+
+\subsection{实验结果分析}
+经过之前的对DMR的优化，在32核centos系统重新进行测试，发现
+\begin{itemize}
+  \item 1和2线程情况下，开销分别比phoenix高出2.8倍和1.4倍
+  \item 4到32线程情况下，性能都非常的好，且随着线程数的增多，性能越好
+\end{itemize}
+
+为了重点分析1和2线程下性能差的具体原因，收集了word\_count运行阶段的各部分的详细时间开销，
+同时收集phoenix的各部分的时间开销，发现group\_keyval占据了很大的时间，特别是在1线程下，
+已经超过总运行时间的50\%
+
+为了从根本上减少group带来的额外开销，考虑是否可以不使用group，
+那便意味这不再使用hash表实现buffer，而是改用数组
+
+\subsection{buffer的数据实现}
+默认情况下的buffer是hash表实现的，由于我们采用了分层的设计方案，
+为了修改buffer的具体实现，只需要修改mapbuf.c即可，保持mapbuf.h的接口不变
+
+1.array实现，每个buffer的结构如图\ref{buf_array}
+\begin{figure}[!h]
+    \centering
+    \includegraphics[height=2cm,width= 8cm]{img/buf_array.png}
+    \caption{buffer implemented by array}
+\label{buf_array}
+\end{figure}
+初始化buffer时，分配MAX\_LEN长度的数据，之后重复利用，而无需再进行多次动态分配。
+mapper产生一个key/val，首先计算对应的hash值，根据hash值得出key的插入位置，
+将key/val对插入
+
+2.发送
+由于多个key已经组织在一个array中，当buffer满时（即key/val数等于MAX\_LEN时），
+便发送数据，无需group，发送结束后，只需将array的长度设置为0即可。
+
+3.使用array实现的优势和局限性
+\begin{itemize}
+  \item 优势：相比hash表的实现，省去发送前的group操作，提高性能
+  \item 局限性：会增加查找key，memmove以及发送chan\_send的开销，且目前不支持key,value的copy，以及value不是整型。
+\end{itemize}
+
+4.实验结果，32centos上的实验结果显示，针对word\_count，
+buffer采用数据实现的性能非常好，如图所示\ref{wc}
+\begin{figure}[!h]
+    \centering
+    \includegraphics[height=5cm,width= 9cm]{img/wc.png}
+    \caption{word\_count results}
+\label{wc}
+\end{figure}
+
+
+
+

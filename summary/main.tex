@@ -1,0 +1,23 @@
+\newcommand\showchange{TT}%{TT FL}%
+\newcommand\hasalgo{FL}%{TT FL}
+%\documentclass[preprint]{../../share/sigplanconf}
+\documentclass[a4paper,11pt,titlepage]{article}
+
+\input local	% common local setting
+\input clocal	% common Chinese setting
+\newcommand{\bs}[0]{$\backslash$}
+\lstset{numbers=left,numberstyle=\tiny, %显示行号
+%keywordstyle=\color{blue!70}, commentstyle=\color{red!50!green!50!blue!50},
+}
+
+\begin{document}
+\section{\hei{总结}}
+\input summary
+
+
+\begin{small}
+\bibliography{pa,book}
+\bibliographystyle{plain}
+\end{small}
+
+\end{document}

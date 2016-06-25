@@ -1,0 +1,129 @@
+\section{MapReduce}
+现实中很多应用可以归结为这样一个模型，
+MapReduce是一个编程模型，主要用于处理大的数据集，使用这个模型进行处理时，用户只需要提供两个函数:map和reduce，map函数处理输入的数据，产生中间的key/value键值对；reduce函数将具有相同key的中间结果归并，并产生最终结果。
+
+使用MapReduce编程模型的一个最大优势在于，程序员不需要考虑底层的细节，由运行时系统管理并行，任务的分割，如何在集群环境中进行调度，容错，管理机器间的通信等等。程序员可以不用熟悉并行化，不了解分布式系统的情况下，能够最大化的利用分布式环境的资源
+
+当处理的数据相当大的时候，考虑如何将输入的数据进行分割然后并行的处理，如何充分利用集群环境，如何容错成为关键的问题
+
+MapReduce的最终目标是
+hides the messy details of parallelization, fault-tolerance, data distribution and load balancing in a library.同时具有相当好的性能
+
+MapReduce的实现方式有很多，主要看具体的机器和运行环境，Google的实现提供的是一种实现方式
+
+\subsection{实现}
+\subsubsection{MapReduce的执行流程}
+1.user program首先会将输入数据分割成M份，然后在集群的机器中fork很多子程序。
+2.多个程序中，有一个是master，其他都是worker,master会挑选一个空闲的worker，让它执行map任务或者reduce任务
+3.执行map任务的worker，首先读取输入的内容，调用用户提供的map函数，产生中间键值对，将这些键值对存入到内存中。
+4.map会周期性将内存中的内容写入到硬盘，然后将位置信息发送给master，然后master发送这些信息给reducer
+5.reduce接受到master发来的通知后，它会使用RPC（remote procedure calls）从map的disk中读取数据，然后reduce对读到的数据进行排序，这样相同key会在一起
+6.reduce调用用户提供的reduce函数，数据进行归并
+7.当所有的map和reduce任务完成以后，master唤醒user program，mapreduce库结束，返回user code
+
+\subsubsection{Fault Tolerance}
+1.worker failure
+如果mapper出错，那么需要重新执行map task，因为不能从fail的机器中取出disk中的中间结果
+如果reducer出错，那么不需要重新执行整个reduce task，因为reducer的结果存放于global file system
+如果一个map task一开始执行于worker A，之后执行于worker B，那么所有的reducer就需要重新执行，因为reducer需要从B读取中家结果
+
+2.master failure
+目前的MapReduce中，因为只有一个master，还不能容错
+
+How does MR cope with worker crashes?
+  * Map worker crashes:
+    master re-runs, spreads tasks over other GFS replicas of input.
+      even if worker had finished, since still need intermediate data on disk.
+    some Reduce workers may already have read failed worker's intermediate data.
+      here we depend on functional and deterministic Map()!
+    how does the master know the worker crashed? (pings)
+    master need not re-run Map if Reduces have fetched all intermediate data
+      though then a Reduce crash would have to wait for Maps to re-run
+  * Reduce worker crashes before producing output.
+    master re-starts its tasks on another worker.
+  * Reduce worker crashes in the middle of writing its output.
+    GFS has atomic rename that prevents output from being visible until complete.
+    so it's safe for the master to re-run the Reduce tasks somewhere else.
+
+Other failures/problems:
+  * What if the master accidentally starts *two* Map() workers on same input?
+    it will tell Reduce workers about only one of them.
+  * What if two Reduce() workers for the same partition of intermediate data?
+    they will both try to write the same output file on GFS!
+    atomic GFS rename will cause the second to finish to win.
+  * What if a single worker is very slow -- a "straggler"?
+    perhaps due to flakey hardware.
+    master starts a second copy of last few tasks.
+  * What if a worker computes incorrect output, due to broken h/w or s/w?
+    too bad! MR assumes "fail-stop" CPUs and software.
+  * What if the master crashes?
+
+\subsubsection{Locality}
+网络带宽是非常稀缺的资源，因此应当尽量减少网络通信量。Google的MapReduce使用了使用GFS作为文件的管理工具，输入文件存就放在集群中，MapReduce master会根据GFS提供的输入文件的copy的位置，并试图在存有输入文件的机器上启动任务，这样便可以避免网络的传输。
+schedule a map task on a machine that contains a replica of the corresponding input data.
+如果没有，那么会从最近的备份的机器中找。这样便具有好的局部性(Locality)
+
+\subsubsection{Task Granularity}
+map阶段的M pieces以及reduce阶段的R pieces，远远大于woker机器的数量，这样做的好处是，可以提高dynamic load balancing
+
+\subsubsection{Backup Tasks}
+map和reduce之间有一个barry，如果有一个map或者reduce特别慢，那么会增加这个MapReduce计算的total time
+只有当map任务全部完成后，才会启动reduce任务，否这reduce无法获取全局的值
+reduce的最终结果会写入到GFS
+
+\subsection{Refinements}
+几处可选的优化操作
+\subsubsection{partition function}
+reduce有R个，map产生的中间结果根据hash(key)\%R被发送给reduce，这样对于负载平衡有很大的好处
+
+\subsubsection{combiner function}
+将map产生的中间结果，进行局部的reduce操作，这样可以有小减少网路通信量，以及本地磁盘空间的使用
+以word count为例，同一个key有1000个value，如果每个都是<key,1>那么需要存放1000次，需要通过网络发送1000次，如果进行局部的reduce那么就成为<key,1000>只要存放一个，然后发送一次
+
+\subsection{总结}
+MapReduce Model易于编程：it hides many painful details:
+concurrency -- same result as sequential execution
+starting s/w on servers
+data movement
+failures
+
+This model scales well
+map不需要等待其他的map也不需要共享数据，这样便可以并发的执行
+reduce也一样
+
+what will be the limiting factor in performance?
+可以优化的地方在哪里？CPU? memory? disk? network?
+They were limited by "network cross-section bandwidth"，事实上，分布式环境下，最敏感的资源便是网络带宽，传输的量，已经网络延迟
+但网络是外界的资源，很难去优化，我们能够做的是，尽量减少网络通信量
+MapReduce做出的努力
+\begin{itemize}
+  \item Map input is read from local disks, not over netwokr，尽量在存放input replication上启动map worker，这样便可以直接从local disk读取，而不是通过网络
+  \item Map阶段的中间结果存放于local disk而不是GFS中，为什么？
+  \item Intermediate data partitioned into files holding many keys，Big network transfers are more efficient
+\end{itemize}
+
+负载不均衡
+How do they get good load balance?
+理想的状态是每个server都能有相同的处理能力，然后或许相同的工作，最大的并发执行.
+But time to process a split or partition isn't uniform.
+Different sizes and contents, and different server hardware
+
+解决的方案：many more splits than workers
+Master hands out new splits to workers who finish previous tasks.
+so no split is so big it dominates completion time.
+这样的话，faster servers do more work than slower ones, finish about the same time
+
+For what applications *doesn't* MapReduce work well?
+  Not everything fits the map/shuffle/reduce pattern.
+  Small data, since overheads are high. E.g. not web site back-end.
+  Small updates to big data, e.g. add a few documents to a big index
+  Unpredictable reads (neither Map nor Reduce can choose input)
+  Multiple shuffles, e.g. page-rank (can use multiple MR but not very efficient)
+  More flexible systems allow these, but more complex model.
+
+因此MapReduce最大的优势是简单，但这种简单也限制了它对更多复杂应用程序的支持
+
+
+
+
+
