@@ -12,14 +12,19 @@ hides the messy details of parallelization, fault-tolerance, data distribution a
 MapReduce的实现方式有很多，主要看具体的机器和运行环境，Google的实现提供的是一种实现方式
 
 \subsection{实现}
+master通过ping来与worker进行检测，如果发现不通，就说明worker有问题
+MapReduce目前无法处理master崩溃的情况，当master崩溃的话，就只能重启
+{\color{red}那么如果要做容错？要如何改进}
 \subsubsection{MapReduce的执行流程}
-1.user program首先会将输入数据分割成M份，然后在集群的机器中fork很多子程序。
-2.多个程序中，有一个是master，其他都是worker,master会挑选一个空闲的worker，让它执行map任务或者reduce任务
-3.执行map任务的worker，首先读取输入的内容，调用用户提供的map函数，产生中间键值对，将这些键值对存入到内存中。
-4.map会周期性将内存中的内容写入到硬盘，然后将位置信息发送给master，然后master发送这些信息给reducer
-5.reduce接受到master发来的通知后，它会使用RPC（remote procedure calls）从map的disk中读取数据，然后reduce对读到的数据进行排序，这样相同key会在一起
-6.reduce调用用户提供的reduce函数，数据进行归并
-7.当所有的map和reduce任务完成以后，master唤醒user program，mapreduce库结束，返回user code
+\begin{enumerate}
+  \item user program首先会将输入数据分割成M份，然后在集群的机器中fork很多子程序。
+  \item 多个程序中，有一个是master，其他都是worker,master会挑选一个空闲的worker，让它执行map任务或者reduce任务
+  \item 执行map任务的worker，首先读取输入的内容，调用用户提供的map函数，产生中间键值对，将这些键值对存入到内存中，最后存入到local disk中
+  \item map会周期性将内存中的内容写入到硬盘，然后将位置信息发送给master，然后master发送这些信息给reducer
+  \item reduce接受到master发来的通知后，它会使用RPC（remote procedure calls）从map的disk中读取数据，然后reduce对读到的数据进行排序，这样相同key会在一起
+  \item reduce调用用户提供的reduce函数，数据进行归并
+  \item 当所有的map和reduce任务完成以后，master唤醒user program，mapreduce库结束，返回user code
+\end{enumerate}
 
 \subsubsection{Fault Tolerance}
 1.worker failure
@@ -123,7 +128,94 @@ For what applications *doesn't* MapReduce work well?
 
 因此MapReduce最大的优势是简单，但这种简单也限制了它对更多复杂应用程序的支持
 
+\section{GFS}
+GFS(Google File System)基于的一些假设：
+
+1.GFS的服务器都是普通的商用计算机，并不那么可靠，集群出现结点故障是常态。因此必须时刻监控系统的结点状态，当结点失效时，必须能检测到，并恢复之。fault tolerance
+
+2.系统存储适当数量的大文件。理想的负载是几百万个文件，文件一般都超过100MB，GB级别以上的文件是很常见的，必须进行有效管理。支持小文件，但不对其进行优化。
+
+3.负载通常包含两种读：大型的流式读（顺序读）和小型的随机读。前者通常一次读数百KB以上，后者通常在随机位置读几个KB。
+
+4.负载还包括很多连续的写操作，往文件追加数据（append）。文件很少会被修改，支持随机写操作，但不必进行优化。
+
+5.系统必须实现良好定义的语义，用于多客户端并发写同一个文件。同步的开销必须保证最小。
+
+6.高带宽比低延迟更重要，GFS的应用大多需要快速处理大量的数据，很少会严格要求单一操作的响应时间。
+
+GFS期望的应用场景应该是大文件，连续读，不修改，高并发
+
+Google文件系统（Google File System，GFS）是构建在廉价的服务器之上的大型分布式系统。它将服务器故障视为正常现象，通过软件的方式自动容错，在保证系统可靠性和可用性的同时，大大减少了系统的成本。
+
+GFS是Google云存储的基石，其它存储系统，如Google Bigtable，Google Megastore，Google Percolator均直接或者间接地构建在GFS之上。另外，Google大规模批处理系统MapReduce也需要利用GFS作为海量数据的输入输出。
+
+\subsubsection{系统结构}
+\begin{figure}[!h]
+    \centering
+    \includegraphics[height=7cm,width= 15cm]{img/gfs.png}
+    \caption{spark1}
+\label{spark1}
+\end{figure}
+
+GFS将整个系统的节点分为三种角色：GFS Master（总控服务器），GFS Chunkserver（数据块服务器，简称CS）以及GFS Client（客户端）。
+
+chunkserver提供存储。GFS会将文件划分为定长数据块，
+每个数据块都有一个全局唯一不可变的id（chunk\_handle），
+数据块以普通Linux文件的形式存储在chunkserver上，
+出于可靠性考虑，每个数据块会存储多个副本，分布在不同chunkserver。
+
+GFS master就是GFS的元数据服务器，负责维护文件系统的元数据，包括命名空间、访问控制、文件-块映射、块地址等，以及控制系统级活动，如chunck lease的管理，垃圾回收、负载均衡等。master会周期性通过HeartBeat发送命令给chunkserver，或者收集它的状态信息
+
+应用需要链接client的代码，然后client作为代理与master和chunkserver交互。master会定期与chunkserver交流（心跳），以获取chunkserver的状态并发送指令。
 
 
+Client读GFS中的chunk
+
+1.应用指定读取某个文件的某段数据，因为数据块是定长的，
+client可以计算出这段数据跨越了几个数据块，
+client将文件名和需要的数据块索引发送给master；
+
+2.master根据文件名查找命名空间和文件-块映射表，得到需要的数据块副本所在的地址，
+将数据块的id和其所有副本的地址反馈给client；
+
+3.client选择一个副本，联系chunkserver索取需要的数据；
+
+4.chunkserver返回数据给client。
+
+\subsubsection{一致性}
+GFS必须将对数据块的修改同步到每一个副本。考虑一下多个应用同时修改同一数据块的情况，
+我们必须为修改操作定义统一的时序，不然多个副本会出现不一致的情况，
+那么定义时序由谁做呢？还记得前面提到的元数据缓存么，
+为了减少master的负担，client在获得副本位置后就不再和master交互，
+所以必然需要选出一个master代理来完成这个任务。
+事实上GFS采用了租约（lease）的机制，master会将租约授权给某个副本，称为primary，
+由这个primary来确定数据修改的顺序，其它副本照做就是。
+
+Client写
+\begin{figure}[!h]
+    \centering
+    \includegraphics[height=8cm,width= 9cm]{img/gfs_write.png}
+    \caption{spark1}
+\label{spark1}
+\end{figure}
+
+1.client需要更新一个数据块，询问master哪个chunkserver拥有该数据块的lease（谁是primary）以及其他replicas（副本）的位置；
+
+2.master将持有lease的primary和其它副本的位置告知client，client缓存之；
+
+3.client向所有副本传输数据，这里副本没有先后顺序，根据网络拓扑情况找出最短路径，数据从client出发沿着路径流向各个chunkserver，这个过程采用流水线（网络和存储并行）。chunkserver将数据放到LRU缓存；
+
+4.一旦所有的副本都确定接受数据，client向primary发送写请求，
+primary为这个前面接受到的数据分配序列号（primary为所有的写操作分配连续的序列号表示先后顺序），
+并且按照顺序执行数据更新；
+
+5.primary将写请求发送给其它副本，每个副本都按照primary确定的顺序执行更新；
+
+6.其它副本向primary汇报操作情况；
+
+7.primary回复client操作情况，任何副本错误都导致此次请求失败，
+并且此时副本处于不一致状态（写操作完成情况不一样）。client会尝试几次3到7的步骤，实在不行就只能重头来过了。
+
+\subsection{GFS与HDFS以及os的FS对比}
 
 
