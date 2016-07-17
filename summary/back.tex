@@ -21,9 +21,54 @@
 DMR
 
 DMR相比Phoenix的优势在哪？
-1.DMR
+1.DMR打破原有phoenix的barry，而barry在phoenix中占有的开销非常大
+2.DMR中使用进程模拟线程，worker之间是地址隔离的，当存在共享数据时，便降低开销
+因此DMR对访存密集型的应用程序有很大的优势，实验的结果是，随着核数的怎多，在64核环境下，是phoenix的10倍
+对于计算密集型的应用，它的优势不是很大
+
+DMR的局限性：
+1.目前的DMR，无法很好的支持迭代式应用，比如典型的kmeans聚类计算，其根本的原因是，phoenix中采用的是线程池，而DMR中，则是每次MapReduce计算时都需要创建和销毁环境，通过具体的实验发现，kmeans在32核环境下，创建和销毁环境的开销占用了50\%以上的开销。
+
+2.进程的间的地址隔离带来的挑战和开销
 
 \subsubsection{MapReduce}
+多核环境下的MapReduce与集群环境下的MapReduce对比。
+
+不同之处：
+1.不同的runtime
+虽然两者遵从一致的思想，但毕竟它们面对的环境是完全不一样的，因此：
+(a)在多核环境下，master主线程管理一个子线程组成的线程池，每个线程在运行的时候，与cpu上的一个core进行绑定，然后执行任务。
+在集群环境下，master也会fork很多子线程，但每个slaver都是一个单独的机器上运行。
+
+(b)在多核环境下，map的产生的中间键值对会被直接存放到内存的共享区，接下来reduce从中取，进行reduce操作，最终的结果存入到内存。
+在集群环境下，map产生的中间结果会存放到本地磁盘中，然后通知master，当master安排reduce任务时，reduce会根据master发来的信息，从对应的map的disk中取数据。reduce最终的结果会存入到分布式文件系统GFS.
+
+(c)
+
+2.影响性能的主要因素不同。
+
+多核环境下的MapReduce：性能的主要限制在于中间数据结构的存储，即用于存储key/val的数据结构。因为多个map线程和多个reduce线程有可能同时访问该共享结果，这会涉及并发控制的问题，通常表现为在锁的等待上的开销比较大。已phoenix中的中间数据为例来说明。
+
+集群环境下的MapReduce：最关注的是网络带宽资源，因为worker和master之间的通信是通过网络，降低网络带宽是集群环境下MapReduce考虑的主要问题
+
+为此MapReduce做出的努力有如下几方面：
+\begin{itemize}
+  \item Map input is read from local disks, not over network，尽量在存放input replication上启动map worker，这样便可以直接从local disk读取，而不是通过网络(moving computation to data)
+  \item Map阶段的中间结果存放于local disk而不是GFS中，为什么？
+  \item Intermediate data partitioned into files holding many keys，Big network transfers are more efficient
+  \item map阶段的combiner操作，所谓combiner就是局部的reduce操作，将一个key对应的多个value进行局部的归并，这样可以有小减少网路通信量，以及本地磁盘空间的使用，以word\_count为例。
+\end{itemize}
+
+相同之处：
+1.基本的思想和处理流程是一样的
+MapReduce是一个编程模型，主要用于处理大的数据集，使用这个模型进行处理时，用户只需要提供两个函数:map和reduce，map函数处理输入的数据，产生中间的key/value键值对；reduce函数将具有相同key的中间结果归并，并产生最终结果。
+map和reduce阶段中间有个一个barry，或者成为shuff，即只有所有的map worker都结束后，才能够开始reduce阶段。
+
+2.负载均衡的问题
+
+3.优势相同：简单的编程模型
+MapReduce编程模型隐藏了运行时的各种细节，程序员在使用该编程模型的时候，无需考虑并行，负责均衡，资源是否充分被利用，容错等问题，这些都由MapReduce库来管理。用户只需要提供map和reduce两个函数逻辑即可。
+
 关键之处：
 优势：
 局限性：
