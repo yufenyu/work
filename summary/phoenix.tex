@@ -1,0 +1,36 @@
+\section{phoenixd的原理介绍}
+phoenix和MapReduce一样，最大的优势在于它简单，缺点是并不是每种应用程序它都能处理。
+phoenix是MapReduce编程模型针对于基于共享内存的多核多处理器的MapReduce库。
+phoenix能够自动完成线程的创建，动态的任务调度，数据的分割，以及容错，无需程序员管理这些细节问题。
+
+随着多核机器的广泛普及，为了充分利用多核资源，并行编程技术变的至关重要，传统的并行编程手段，需要程序员在程序中显示的使用锁或者消息传递机制来完成多个线程间的同步，这无形中，给程序员增加了更多的负担。
+为了简化编程，从两方面着手：第一，具有较高抽象并且简单的编程模型，这样用户可以简单使用。第二，具有高效的运行时系统，用于管理线程的创建和销毁，任务的动态调度，数据的分割，以及容错等问题，无需用户的干预。
+\subsection{phoenix的执行流程}
+1.创建线程池，create多个线程作为worker.默认情况下，worker数量等于当前系统可用的cpu cores的数量
+
+2.对输入数据进行切割，每块小的数据成为一个task，并将task插入到一个task队列中，每个线程对应一个task队列
+
+3.开始map阶段，start\_worker，配置线程池中线程的运行参数，启动线程池中的线程开始工作。
+启动1-num\_threads-1号线程， 第0号线程为master，调用start\_my\_worker开始直接工作。
+
+4.map阶段的worker全部完成任务后，开始reduce阶段
+
+\subsection{pthread线程池}
+
+\subsection{中间结果的存储结构}
+1.env->intermediate\_task\_alloc\_len = env->num\_map\_threads；每个map线程对应一行
+phoenix中的中间结构为
+\begin{lstlisting}
+env->intermediate_vals = (keyvals_arr_t **)mem_malloc (
+        env->intermediate_task_alloc_len * sizeof (keyvals_arr_t*));
+\end{lstlisting}
+
+2.每个map(i)线程对应intermediate\_vals中的一行intermediate\_vals[i]
+
+3.根据key的partition得到对应行intermediate\_vals[i]中的位置(即intermediate\_vals的列)，每个元素是一个keyvals\_arr\_t类型array，由多个key+vals组成。通过insert\_keyval\_merged()插入到array中，如果array中已经有对应的key，那么将value插入到vals数组中；如果没有key，则插入该key/val对。
+
+\subsection{优势和局限性}
+phoenix很好的证明了mapreduce编程模型在多核机器上的可行性，并且具有和pthread相当的性能，同时它最大的优势在于编程简单，充分利用多核资源
+
+缺点：随着核数的增多，性能会变差，不具有好的可扩放性
+

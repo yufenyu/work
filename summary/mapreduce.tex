@@ -155,8 +155,8 @@ GFS是Google云存储的基石，其它存储系统，如Google Bigtable，Googl
 \begin{figure}[!ht]
     \centering
     \includegraphics[height=7cm,width= 15cm]{img/gfs.png}
-    \caption{spark1}
-\label{spark1}
+    \caption{gfs}
+\label{gfs}
 \end{figure}
 
 GFS将整个系统的节点分为三种角色：GFS Master（总控服务器），GFS Chunkserver（数据块服务器，简称CS）以及GFS Client（客户端）。
@@ -225,8 +225,8 @@ Client写
 \begin{figure}[!ht]
     \centering
     \includegraphics[height=8cm,width= 9cm]{img/gfs_write.png}
-    \caption{spark1}
-\label{spark1}
+    \caption{gfs write}
+\label{gfs_write}
 \end{figure}
 
 1.client需要更新一个数据块，询问master哪个chunkserver拥有该数据块的lease（谁是primary）以及其他replicas（副本）的位置；
@@ -330,7 +330,7 @@ Chunk fault tolerance
       The primary chunk server updated chunk
       But then failed and the replicas are out of date
     A client may read an not-up-to-date chunk
-    When client refreshes lease it will learn about new version #
+    When client refreshes lease it will learn about new version 
   Authors claims weak consistency is not a big problems for apps    
     Most file updates are append-only updates
       Application can use UID in append records to detect duplicates

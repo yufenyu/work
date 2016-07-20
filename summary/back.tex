@@ -1,37 +1,25 @@
-\subsection{背景}
-1.确定性并行
-2.分布式环境下的MapReduce，即Google原始的MapReduce，Hadoop，分布式系统
-3.phoenix，多核环境下的编程模型
+\section{背景}
+五个方面：\\
+1.确定性并行以及并行编程模型\\
+2.分布式环境下的MapReduce，即Google原始的MapReduce，Hadoop，分布式系统\\
+3.phoenix，多核环境下的编程模型\\
+4.DMR的设计和实现方案\\
+5.MapReduce编程模型的不足，衍生为Pregel，spark系统，针对迭代式应用，DMR接下来的改进方式\\
 
-\subsubsection{确定性并行方向}
-1.简要介绍课题组目前大的研究方向
+几个问题：\\
+1.多核下的MapReduce模型与集群环境下的MapReduce模型的异同对比\\
+2.phoenix和DMR的不同支持，DMR的优势和改进在何处\\
 
-2.重点介绍我的研究以及我的工作“面向多核可扩展的MapReduce的研究”
+\subsection{确定性并行方向}
+1.简要介绍课题组目前大的研究方向, 重点介绍我的研究以及我的工作“面向多核可扩展的MapReduce的研究”
 
-\subsubsection{多核环境下的编程模型}
-如何充分利用多核资源，从编程的角度去考虑
-
-
-\subsubsection{Phoenix}
-1.pthread的实现phoenix
-2.phoenix的流程图
+2.多核环境下的编程模型, 如何充分利用多核资源，从编程的角度去考虑
 
 
-\subsubsection{DMR}
-DMR
 
-DMR相比Phoenix的优势在哪？
-1.DMR打破原有phoenix的barry，而barry在phoenix中占有的开销非常大
-2.DMR中使用进程模拟线程，worker之间是地址隔离的，当存在共享数据时，便降低开销
-因此DMR对访存密集型的应用程序有很大的优势，实验的结果是，随着核数的怎多，在64核环境下，是phoenix的10倍
-对于计算密集型的应用，它的优势不是很大
 
-DMR的局限性：
-1.目前的DMR，无法很好的支持迭代式应用，比如典型的kmeans聚类计算，其根本的原因是，phoenix中采用的是线程池，而DMR中，则是每次MapReduce计算时都需要创建和销毁环境，通过具体的实验发现，kmeans在32核环境下，创建和销毁环境的开销占用了50\%以上的开销。
 
-2.进程的间的地址隔离带来的挑战和开销
-
-\subsubsection{MapReduce}
+\subsection{MapReduce}
 多核环境下的MapReduce与集群环境下的MapReduce对比。
 
 不同之处：
@@ -72,7 +60,3 @@ MapReduce编程模型隐藏了运行时的各种细节，程序员在使用该�
 关键之处：
 优势：
 局限性：
-
-\subsubsection{Hadoop}
-
-\subsubsection{Spark}
