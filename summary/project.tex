@@ -1,12 +1,72 @@
 \section{描述}
-我的课题名是“面向多核可扩展性的MapReduce的研究”，最终的目标是编写一个可扩展性的MapReduce库，成为多核环境下的编程模型。
+我的课题名是“面向多核可扩展性的MapReduce的研究”，课题的目标是编写一个可扩展性的MapReduce库，提供简洁高效的编程。先从两个方面介绍该课题。第一是MapReduce编程模型，第二是多核环境下的MapReduce
 
-一方面，MapReduce是Google公司提出的一种编程模型，利用集群资源处理大的数据集。这个模型的最大优势是简单，程序员不需要考虑底层的细节，比如任务的分割，多个任务的并写执行，如何在集群环境中进行调度，容错，管理机器间的通信等等，这些细节都是由MapReduce运行时系统管理。程序员可以不用熟悉并行化，不了解分布式系统的情况下，也能够使用MapReduce编程模型最大化的利用分布式环境的资源。
+一方面，MapReduce是Google公司提出的一种编程模型，利用集群资源处理大的数据集。这个模型的最大优势是简单，也就是说，程序员不需要考虑底层的细节，比如任务的分割，多个任务的并写执行，如何在集群环境中进行调度，如何容错，如何管理机器间的通信等等问题，这些细节复杂的问题都是由MapReduce运行时系统进行管理。程序员可以不用熟悉并行化，不了解分布式系统的情况下，也能够使用MapReduce编程模型最大化的利用分布式环境的资源，进行大数据的计算。
 
-程序员只需要提高两个函数：map和reduce；map函数对输入数据进行处理，得到key/value的键值对，这些键值对，成为map产生的中间结果；reduce函数的作用是，将具有相同key的中间结果归并成，得到最终结果。
+程序员在使用MapReduce编程模型时，只需要提高两个函数：map和reduce；map函数对输入数据进行处理，得到key/value的键值对；reduce函数是对这些键值对进行处理，将具有相同key的多个value进行归并，得到最终结果。
 
-另一方面，随着多核机器的广泛普及，如何充分发挥多核系统的资源，成为一个很重要的课题，其中，从编程模型的角度去思考，是一个很重要的方式，因此Google提出的MapReduce编程模型后，耶鲁大学的Range等人将MapReduce编程模型移植到多核环境，他们编写了一套针对多核的MapReduce库，并通过实验证明，MapReduce编程模型在性能上可以与phtread编写的程序想媲美，而它优于pthread的是，它简单！
 
-我的工作是，基于我们课题组已有的一个虚拟内存模型，重写编写了一套针对多核的MapReduce库，我们成为DMR，通过实验结果
+另一方面，随着多核机器的广泛普及，如何充分发挥多核系统的资源，成为一个很重要的课题，其中，从编程模型的角度去思考，是一个很重要的方式，因此Google提出的MapReduce编程模型后，耶鲁大学的Range等人将MapReduce编程模型移植到多核环境，他们编写了一套针对多核的MapReduce库，并通过实验证明，MapReduce编程模型在性能上可以与phtread编写的程序想媲美，而且它延续了MapReduce的优点，就是它简单！
+
+我的工作是，基于我们课题组已有的一个虚拟内存模型，重写编写了一套针对多核环境的MapReduce库，我们称为DMR。
+
+\subsection{多核环境下的MapReduce库与集群环境下的MapReduce库的异同}
+多核环境下的MapReduce与集群环境下的MapReduce对比。
+
+\subsubsection{不同之处}
+1.不同的runtime\\
+不论是多核环境还是集群环境，MapReduce编程模型的处理流程大致是这样的：
+\begin{itemize}
+  \item 首先对输入的数据进行分割成多个子任务，放入任务队列，该阶段成为split过程
+  \item 然后进入map阶段，map阶段会有多个worker，每个worker会从任务队列中取任务，并调用用户提供的map函数进行map计算，产生key/val的键值对，map阶段产生的结果，称为中间结果
+  \item 等到所有map worker都完成任务后，便开始reduce阶段，reduce阶段对map产生的中间结果进行归并，每个reduce会得到最终的结果的片段。
+  \item 最后merge阶段，merge会将多个reduce产生的局部结果进行归并，成为最终的结果，返回给应用程序。
+\end{itemize}
+刚刚说的，是MapReduce模型中的主要过程，其中还有一些可选的结果，比如combiner阶段
+
+虽然多核环境和集群环境下的MapReduce，都遵刚刚所讲述的过程，但环境不同，具体的运行时也是不一样的，主要表现在几个方面：
+\\
+第一：worker的不同形式
+\begin{itemize}
+  \item 在多核环境下，master主线程管理一个子线程组成的线程池，每个线程在运行的时候，与cpu上的一个core进行绑定，然后执行任务。
+  \item 在集群环境下，master也会fork很多子线程，但每个slaver都是一个单独的机器上运行。
+\end{itemize}
+
+第二：中间结果的存放
+\begin{itemize}
+  \item 在多核环境下，map产生的中间键值对会被直接存放到内存的共享区，接下来reduce从中取，进行reduce操作，最终的结果存入到内存。
+  \item 在集群环境下，map产生的中间结果会存放到本地磁盘中，然后通知master，当master安排reduce任务时，reduce会根据master发来的信息，从对应的map的disk中取数据。reduce最终的结果会存入到分布式文件系统GFS.
+\end{itemize}
+
+
+第二：影响性能的主要因素不同。
+\begin{itemize}
+  \item 多核环境下的MapReduce：性能的主要限制在于中间数据结构的存储，即用于存储key/val的数据结构。因为多个map线程和多个reduce线程有可能同时访问该共享结果，这会涉及并发控制的问题，通常表现为在锁的等待上的开销比较大。phoenix对该部分进行改进，每个线程操作的区域不同，可以避免在锁的等待上话费的开销。
+  \item 集群环境下的MapReduce：最关注的是网络带宽资源，因为worker和master之间的通信是通过网络，降低网络带宽是集群环境下MapReduce考虑的主要问题。为此MapReduce做出的努力有如下几方面：
+  
+\begin{itemize}
+  \item Map input is read from local disks, not over network，尽量在存放input replication上启动map worker，这样便可以直接从local disk读取，而不是通过网络(moving computation to data)
+  \item Map阶段的中间结果存放于local disk而不是GFS中，为什么？
+  \item Intermediate data partitioned into files holding many keys，Big network transfers are more efficient
+  \item map阶段的combiner操作，所谓combiner就是局部的reduce操作，将一个key对应的多个value进行局部的归并，这样可以有小减少网路通信量，以及本地磁盘空间的使用，以word\_count为例。
+\end{itemize}
+  
+\end{itemize}
+
+
+\subsubsection{相同之处}
+1.基本的思想和处理流程是一样的
+
+
+2.负载均衡的问题
+
+3.优势相同：简单的编程模型
+MapReduce编程模型隐藏了运行时的各种细节，程序员在使用该编程模型的时候，无需考虑并行，负责均衡，资源是否充分被利用，容错等问题，这些都由MapReduce库来管理。用户只需要提供map和reduce两个函数逻辑即可。
+
+\subsection{DMR的优势与局限}
+
+\subsection{DMR与phoenix有何不同}
+
+\subsection{MapReduce编程模型的不足之处}
 
 
