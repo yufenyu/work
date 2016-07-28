@@ -5,10 +5,9 @@
 
 程序员在使用MapReduce编程模型时，只需要提高两个函数：map和reduce；map函数对输入数据进行处理，得到key/value的键值对；reduce函数是对这些键值对进行处理，将具有相同key的多个value进行归并，得到最终结果。
 
+随着多核机器的广泛普及,如何简单有效地利用多核资源已成为一个十分重要的课题。然而使用现有的多核上的并行编程模式,包括共享内存多线程和消息传递,它们需要程序员自己管理线程之间的通信、任务分派和调度，这无形中给程序员增加了很多负担，也让并行编程变的复杂。受到Google的MapReduce编程思想的启发，耶鲁大学的Range等人将MapReduce编程模型移植到多核环境，他们编写了一套针对多核的MapReduce库，并通过实验证明，MapReduce编程模型在性能上可以与phtread编写的程序相媲美，而且它延续了MapReduce的优点，就是它简单！
 
-另一方面，随着多核机器的广泛普及，如何充分发挥多核系统的资源，成为一个很重要的课题，其中，从编程模型的角度去思考，是一个很重要的方式，因此Google提出的MapReduce编程模型后，耶鲁大学的Range等人将MapReduce编程模型移植到多核环境，他们编写了一套针对多核的MapReduce库，并通过实验证明，MapReduce编程模型在性能上可以与phtread编写的程序想媲美，而且它延续了MapReduce的优点，就是它简单！
-
-我的工作是，基于我们课题组已有的一个虚拟内存模型，重写编写了一套针对多核环境的MapReduce库，我们称为DMR。
+多核环境下的MapReduce库phoenix提出之后，学术界有对phoenix提出了很多的改进方式。我们是通过实验发现，phoenix的可扩展性比较差，通常应用程序在1-8核环境下，运行时间随着核数的增多而下降；但是8核以上，运行时间不增加，反而上升。特别是在32核环境下，应用程序的运行时间甚至比1核情况的时间都常，非常夸张。这种我们称之为scalability，即可扩放性。我的工作是，基于我们课题组已有的一个虚拟内存模型，重写编写了一套针对多核环境的MapReduce库，我们称为DMR，它具有较好的可扩放性。
 
 \subsection{多核环境下的MapReduce库与集群环境下的MapReduce库的异同}
 多核环境下的MapReduce与集群环境下的MapReduce对比。
@@ -63,10 +62,40 @@
 3.优势相同：简单的编程模型
 MapReduce编程模型隐藏了运行时的各种细节，程序员在使用该编程模型的时候，无需考虑并行，负责均衡，资源是否充分被利用，容错等问题，这些都由MapReduce库来管理。用户只需要提供map和reduce两个函数逻辑即可。
 
-\subsection{DMR的优势与局限}
+\subsection{DMR的处理流程和关键问题}
+\subsubsection{DMR的处理流程}
+
+\subsubsection{关键问题}
+
 
 \subsection{DMR与phoenix有何不同}
+DMR和phoenix的主要处理流程大致相同，主要的不同在三个方面
+
+\subsubsection{中间结构的不同}
+多核环境下有一个非常重要结构，就是map产生的key/val对该如何存放，假设称这样的结构为一个buffer，对buffer的操作是限制多核mapreduce性能非常关键的因素，phoenix中采用一个全局的二维数组，
+
+\subsubsection{barrier}
+phoenix的处理过程中，map和reduce阶段之间存在一个barrier，即只有等所有的map计算都完成后，才开始reduce计算。这样做虽然会带来开销，但是编程简单，不需要复杂的同步；如果不这么做，map和reduce线程将可能同时访问并修改全局的中间结构，会导致数据的不一致性。
+
+DMR中，map和reduce间不需要buffer，每个map都拥有自己私有buffer，一旦buffer中的数据被填满，就可以通过通道发送给reduce线程，reduce接受数据，存放于自己私有的buffer，然后便可以进行reduce计算，相比phoenix，map和reduce之间并发的程度明显变大，性能也会随之提升。
+
+\subsubsection{底层的编程}
+{\color{red}
+phoenix使用Pthread编程模型完成线程的创建，执行和销毁。
+DMR是基于SPMC模型提供的接口，最大的在于该模型中使用进程模拟线程，由于每个进程都有自己的地址空间}
+
+\subsection{DMR的优势与局限}
+
 
 \subsection{MapReduce编程模型的不足之处}
+Google 提出的 MapReduce 并不适合于含有多次迭代的应用程序，例如典型的kmeans算法，它是一个聚类操作，计算的过程需要多次的MapReduce计算，一次MapReduce的结果将作为下次MapReduce计算的输入，直到满足一定的结束条件。虽然Hadoop是可以处理这样的应用程序，但它处理的性能低效，分析原因主要有两点：
+\begin{enumerate}
+  \item 每次迭代中都需要重新创建任务;
+  \item mapreduce中，每个worker在处理完数据后，将结果保存在本地磁盘上，使用的时候，需要从磁盘中取，但磁盘的I/O操作比较耗时，如果每次迭代都从磁盘上取这些数据，那么效率会比较差。
+\end{enumerate}
+
+为此提出了很多适应迭代式的MapReduce编程模型，但这些改进的局限在于只针对一类应用程序，不具有广泛性。
+
+Spark是比较好的框架
 
 
