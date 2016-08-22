@@ -63,6 +63,7 @@
 MapReduce编程模型隐藏了运行时的各种细节，程序员在使用该编程模型的时候，无需考虑并行，负责均衡，资源是否充分被利用，容错等问题，这些都由MapReduce库来管理。用户只需要提供map和reduce两个函数逻辑即可。
 
 \subsection{DMR的处理流程和关键问题}
+
 \subsubsection{DMR的处理流程}
 
 \subsubsection{关键问题}
@@ -85,7 +86,9 @@ phoenix使用Pthread编程模型完成线程的创建，执行和销毁。
 DMR是基于SPMC模型提供的接口，最大的在于该模型中使用进程模拟线程，由于每个进程都有自己的地址空间}
 
 \subsection{DMR的优势与局限}
-
+优化的方向：
+  1.内存池：减少malloc和free的开销，设计的思想
+  2.线程池：为了支持迭代式的mapreduce应用
 
 \subsection{MapReduce编程模型的不足之处}
 Google 提出的 MapReduce 并不适合于含有多次迭代的应用程序，例如典型的kmeans算法，它是一个聚类操作，计算的过程需要多次的MapReduce计算，一次MapReduce的结果将作为下次MapReduce计算的输入，直到满足一定的结束条件。虽然Hadoop是可以处理这样的应用程序，但它处理的性能低效，分析原因主要有两点：
@@ -97,5 +100,3 @@ Google 提出的 MapReduce 并不适合于含有多次迭代的应用程序，�
 为此提出了很多适应迭代式的MapReduce编程模型，但这些改进的局限在于只针对一类应用程序，不具有广泛性。
 
 Spark是比较好的框架
-
-

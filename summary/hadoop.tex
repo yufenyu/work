@@ -198,3 +198,12 @@ GFS 在支持并发写入和优化网络数据传输方面做出了最佳的折�
 GFS 的论文发表于 2003 年，后来大部分的分布式文件系统设计实现或多或少都参考了 GFS 的设计思路。
 而 HDFS 算是开源分布式文件系统中最完整实现了 GFS 论文中的概念模型。 
 但 HDFS 依然简化了 GFS 中关于并发写的思路
+
+\subsection{Hadoop中MapReduce编程模型}
+MapReduce编程模型对外提供两层，底层为基本的java API，有5个可编程组件：InputFormat, Mapper, Partitioner, Reducer, OutputFormat
+上层为4个工具包。
+
+序列化：是指将结构化对象转换为字节流以便于通过网络进行传输或写入持久存储的过程。Hadoop MapReduce中，序列化的主要作用有两个：永久存储和进程间通信。
+回调机制，用于回调用户提供的map或reduce函数。
+
+MapReduce作业配置与提交，作业由两部分组成：应用程序和作业配置。作业配置：环境配置和用户自定义配置。用户自定义配置包括：作业名称，mapper/reducer, reduce task个数。
