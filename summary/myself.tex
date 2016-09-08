@@ -37,12 +37,6 @@ phoenix的处理流程的大致流程也是split, map, reduce，有一个master�
 
 
 
-
-
-
-
-
-
 \subsection{DMR的一些缺点和优化点}
 虽然DMR的进程地址空间的隔离会让开销变大，但它带来的收益远大于其开销
 
@@ -51,3 +45,24 @@ phoenix的处理流程的大致流程也是split, map, reduce，有一个master�
 1.迭代式应用的支持kmeans，线程池。
 
 2.会存在大量key/val的分配，动态内存分配，内存池来实现。
+
+\section{介绍的思路}
+1.背景: MapReduce, 面向多核的MapReduce库phoenix，我们改进后的MapReduce库
+2.phoenix存在的问题：scalability不好，
+a.不好的表现是怎样的？
+b.scalability不好的原因分析：为了充分利用多核资源phoenix中使用多线程，以充分利用多核资源，以进行高度的并发。
+内核共享数据结构的竞争，多个cores访问竞争，cache miss的问题。
+3.从哪几个角度进行改进的：a.中间数据结构，私有buffer的设计，并尝试不同的buffer的内部实现，破原来的barrier; b.底层模型的不一样，我们底层的模型是使用进程来做，不再使用线程（进程和线程的分别优势在于什么）
+
+4.最后的实验结果
+
+
+
+one source of poorly scaling OS is use of data structurs modified by multiple cores.
+with one core there are no cache misses, and the benchmark is fast; with two cores, the cache coherence protocol forces a few cache miss per iteration to exchange the lock and table data.
+
+有些共享是不可避免的，但有些共享其实是多余的，这种多余会造成同步的开销
+
+linux内核中的设计，采用细粒度的锁或者wait-free原语
+
+
