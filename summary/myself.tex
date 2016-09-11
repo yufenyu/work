@@ -47,22 +47,29 @@ phoenix的处理流程的大致流程也是split, map, reduce，有一个master�
 2.会存在大量key/val的分配，动态内存分配，内存池来实现。
 
 \section{介绍的思路}
+简单明了的讲述背景，我的主要工作是优化，重点在于如何去优化phoenix，接下来的一些计划
+
 1.背景: MapReduce, 面向多核的MapReduce库phoenix，我们改进后的MapReduce库
+
 2.phoenix存在的问题：scalability不好，
 a.不好的表现是怎样的？
-b.scalability不好的原因分析：为了充分利用多核资源phoenix中使用多线程，以充分利用多核资源，以进行高度的并发。
-内核共享数据结构的竞争，多个cores访问竞争，cache miss的问题。
-3.从哪几个角度进行改进的：a.中间数据结构，私有buffer的设计，并尝试不同的buffer的内部实现，破原来的barrier; b.底层模型的不一样，我们底层的模型是使用进程来做，不再使用线程（进程和线程的分别优势在于什么）
-
-4.最后的实验结果
+b.目前影响phoenix性能不好的因素
+c.scalability不好的原因分析：为了充分利用多核资源phoenix中使用多线程，以充分利用多核资源，进行高度的并发。但多线程存在的问题是什么？
 
 
+3.从哪几个角度进行改进的：
+a.中间数据结构，私有buffer的设计，并尝试不同的buffer的内部实现，破原来的barrier; 
+b.针对多线程可扩放性的问题，我们尝试使用进程来完成，但多个进程存在的问题是进程间的通信，编写了一套自己的通道（基于共享内存），底层模型的不一样，我们底层的模型是使用进程来做，不再使用线程（进程和线程的分别优势在于什么）
+c.最后的性能表现较好
 
-one source of poorly scaling OS is use of data structurs modified by multiple cores.
-with one core there are no cache misses, and the benchmark is fast; with two cores, the cache coherence protocol forces a few cache miss per iteration to exchange the lock and table data.
+4.正在考虑和研究的一些问题
+a.目前考虑都是从较上层的角度去考虑的，其实内核共享数据结构的竞争，多个cores访问竞争，cache miss的问题，是多核scalability不好的很关键的因素。
+b.容错问题
 
-有些共享是不可避免的，但有些共享其实是多余的，这种多余会造成同步的开销
+三个大的方面：
+1.线程和进程的优缺点的详细对比
+2.为了改进性能我们做的buffer的改进
+3.
 
-linux内核中的设计，采用细粒度的锁或者wait-free原语
 
 
