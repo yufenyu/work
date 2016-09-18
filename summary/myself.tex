@@ -2,12 +2,25 @@
 我叫俞玉芬，是中国科学技术大学2年级硕士研究生，我的专业是计算机科学与技术，我的课题是面向多核可伸缩的MapReduce的研究。
 性格外向，生活态度比较积极，喜欢跑步，骑行，以及户外徒步旅行，还喜欢看一些闲书。工作上，态度认真努力。
 
+\subsection{English introducing}
+My name is Yuyufen, coming from AnHui, WuHu. I received the bachelor degree from China
+women's university, and now I am pursuing the master degree with the school of computer science and technology in USTC. In the past 2 years, I spend most of my time on study and research.
+
+In my spare time, I like to do some sports, such as, running, riding bicycle. Sports helps me to keep good health and state.
+
+My research interests include: MapReduce model, parallel programming, operator system and computer system, not developing application like Android or IOS. So, I want to do work about operator system and computer system in the future. In my opinion, Intel is an excellent in system field.
+
+I think I am an outgoing person and easy to get well with others, and I have a strong sense of responsibility. When face the challenges and problems, I have a positive attitude and will do my best to solve them.
+
+That’s all. Thank you
+
+
 \subsection{项目介绍}
 我的课题名是“面向多核可扩展性的MapReduce的研究”，我先介绍一下项目的背景。
 
 随着多核机器的广泛普及,如何简单有效地利用多核资源已成为一个十分重要的课题。现有的多核上的并行编程模式,包括共享内存多线程pthread和消息传递MPI,它们需要程序员自己管理线程之间的通信、任务分派和调度，这无形中给程序员增加了很多负担，也让并行编程变的复杂。04年Google提出了MapReduce编程模型，极大的简化了并行编程。受到Google的MapReduce编程思想的启发，耶鲁大学的Range等人将MapReduce编程模型移植到多核环境，他们编写了一套针对多核的MapReduce库，并通过实验证明，应用程序使用MapReduce编程模型在性能上可以与phtread编写的程序相媲美，而且它延续了MapReduce的优点，就是它接口简单，使用方便！
 
-多核环境下的MapReduce库phoenix提出之后，学术界有对phoenix提出了很多的改进和优化。我们通过实验发现，phoenix的可扩展性比较差，具体表现为：应用程序使用phoenix库时，在1-8核环境下，运行时间随着核数的增多而下降；但是8核以上，运行时间不降低，反而上升。特别是在32核环境下，应用程序的运行时间甚至比1核情况的时间都长，非常夸张，也意味着，8核以上的系统，很难在通过phoenix达到理想的性能效果。为了改进这个问题，我的工作是改进phoenix的不可扩展性，重新编写了一套MapReduce模型
+多核环境下的MapReduce库phoenix提出之后，学术界有对phoenix提出了很多的改进和优化。我们通过实验发现，phoenix的可扩展性比较差，具体表现为：应用程序使用phoenix库时，在1-4核环境下，运行时间随着核数的增多而下降；但是8核以上，运行时间不降低，反而上升。特别是在32核环境下，应用程序的运行时间甚至比1核情况的时间都长，非常夸张，也意味着，8核以上的系统，很难在通过phoenix达到理想的性能效果。为了改进这个问题，我的工作是改进phoenix的不可扩展性，重新编写了一套MapReduce模型
 
 涉及的关键技术：MapReduce，线程池的管理，buffer的管理和设计，多线程的编程，进程间的通信，多线程的并发控制问题，
 
@@ -16,37 +29,22 @@ MapReduce是一个编程模型，主要用于处理大的数据集，使用这�
 
 使用MapReduce编程模型的一个最大优势在于，程序员不需要考虑底层的细节，由运行时系统管理并行，任务的分割，如何在集群环境中进行调度，容错，管理机器间的通信等等。程序员可以不用熟悉并行化，不了解分布式系统的情况下，能够最大化的利用分布式环境的资源。当处理的数据相当大的时候，考虑如何将输入的数据进行分割然后并行的处理，如何充分利用集群环境，如何容错成为关键的问题
 
-{\color{red}结合word\_count来说明MapReduce的处理应用程序的流程，大体流程（map和reduce），其中的细节（split, combiner, merge）}
-
-
 \subsection{DMR是如何改进和优化phoenix}
 1.phoenix的流程，phoenix的局限和不足，phoenix中影响性能的关键因素
 
 2.新的MapReduce库中的做法，优势
 
 
-phoenix的处理流程的大致流程也是split, map, reduce，有一个master进程，以及一组worker线程组成的线程池（线程池如何实现，如何管理？）。Phoenix中影响性能的关键因素有两点：1.中间结构是一个全局二维数组，多个map线程和reduce线程都可以访问，为了避免负责的读写控制与同步，以及锁的开销，phoenix使用barrier来简化（具体说一下barrier是如何让编程简单），但barrier严重影响性能。2.Phoenix是使用Pthread编写的多线程，多个线程共享主线程的地址空间，除了栈是私有的。这会带来一个问题，当多个线程在读写一个共享变量时，需要锁进行同步。当线程越多时，花费在锁上的开销会越大。
+phoenix的处理流程的大致流程也是split, map, reduce，有一个master进程，以及一组worker线程组成的线程池。Phoenix中影响性能的关键因素有两点：1.中间结构是一个全局二维数组，多个map线程和reduce线程都可以访问，为了避免负责的读写控制与同步，以及锁的开销，phoenix使用barrier来简化（具体说一下barrier是如何让编程简单），但barrier严重影响性能。2.Phoenix是使用Pthread编写的多线程，多个线程共享主线程的地址空间，除了栈是私有的。这会带来一个问题，当多个线程在读写一个共享变量时，需要锁进行同步。当线程越多时，花费在锁上的开销会越大， 我们也通过linux perf工具测试了一下，发现CPU的利用率非常低，大部分时候进程都在等待，并没有正在的在cpu上执行。3.cache miss的问题
 
-新的MapReduce库针对上述的两个问题进行优化和改进：1.原有的共享中间结构，变为每个线程私有的buffer，map将产生的数据存入到自己私有的buffer中，当buffer满的时候，map就将数据发送给reduce，然后继续做map任务，reduce收到数据后，也可以开始reduce的工作。这样做最大的好处是，map和reduce线程间不需要barrier，增加了并行的程度。buffer的实现
+\subsection{新的MapReduce库针对上述的两个问题进行优化和改进}
+1.原有的共享中间结构，变为worker私有的buffer，map将产生的数据存入到自己私有的buffer中，当buffer满的时候，map就将数据发送给reduce，然后继续做map任务，reduce收到数据后，也可以开始reduce的工作。这样做最大的好处是，map和reduce线程间不需要barrier，增加了并行的程度。buffer的实现，还会在cache miss上减少
 
-2.Phoenxi中采用多线程进行编程，多个线程共享master主线程的很多资源，这会造成很多锁的开销，特别是核数越多，线程数越多的情况下，越明显。这是造成不可伸缩性的很重要的因素，为此，在新的MapReduce库中，我们的做法是使用进程。（优势和劣势分别是什么？）进程中的fork是采用COW（解释一下什么是COW机制）的机制创建子进程的，各个进程都拥有自己独立的地址空间，创建时子进程共享父进程的地址空间，但是是只读共享，当它试图修改的时候，就会产生一份自己的拷贝。这样可以避免锁的开销。
+2.Phoenxi中采用多线程进行编程，多个线程共享master主线程的很多资源，这会造成很多锁的开销，特别是核数越多，线程数越多的情况下，越明显。这是造成不可伸缩性的很重要的因素，为此，在新的MapReduce库中，我们的做法是使用进程。（优势和劣势分别是什么？）进程中的fork是采用COW（解释一下什么是COW机制）的机制创建子进程的，各个进程都拥有自己独立的地址空间，创建时子进程共享父进程的地址空间，但是是只读共享，当它试图修改的时候，就会产生一份自己的拷贝。这样可以避免锁的开销。cpu的利用率会高
 
+3.cache miss会因为使用进程和私有buffer而降低
 
-
-\subsection{DMR在实现过程中的一些难点问题}
-
-
-
-\subsection{DMR的一些缺点和优化点}
-虽然DMR的进程地址空间的隔离会让开销变大，但它带来的收益远大于其开销
-
-使用进程模拟线程，本身的开销会比较大，
-
-1.迭代式应用的支持kmeans，线程池。
-
-2.会存在大量key/val的分配，动态内存分配，内存池来实现。
-
-\section{介绍的思路}
+\subsection{介绍的思路}
 简单明了的讲述背景，我的主要工作是优化，重点在于如何去优化phoenix，接下来的一些计划
 
 1.背景: MapReduce, 面向多核的MapReduce库phoenix，我们改进后的MapReduce库
@@ -67,9 +65,25 @@ a.目前考虑都是从较上层的角度去考虑的，其实内核共享数据
 b.容错问题
 
 三个大的方面：
-1.线程和进程的优缺点的详细对比
-2.为了改进性能我们做的buffer的改进
-3.
+1.线程和进程的优缺点的详细对比:
+
+(a)linux中pthread\_creat最终会调用clone()， 进程的创建会调用fork(), 但最终都会调用do\_fork函数进行创建，只是设置的参数不一样。fork()的开销会比较大，比clone()的开销大；(b)由于进程拥有自己的地址空间，而多个线程共享进程的资源，因此线程间的通信会相对较容易，进程则需要多种IPC: pipe, fifo, 互斥锁和条件变量，读写锁，内核常用的spinlock, 信号量，共享内存，消息队列，sorket等方式。(c)调度的时候，进程需要切换的开销比较大，因为进程切换时需要切换pagetable， TLB等，线程切换的开销会相对较小。(d)由于多个线程共享进程的地址空间，当多个线程需要修改同一个位置的位置时，就需要同步，等待的时间会比较长，而进程是采用COW的机制fork子进程的，每个进程都拥有自己独立的地址空间
+
+
+2.为了改进性能我们做的buffer的改进，并尝试使用buffer的不用实现，array buffer和hash buffer
+
+3.cache miss的降低，cpu的利用率提高
+
+4.多核环境下，多个core对内核中共享数据区的访问也是影响scalability非常重要的因素，目前看来，我们新编写的MapReduce库，16-32情况下是，不增加也不降低，我猜测可能是多个core对内核共享结构访问的造成的，还需要进一步的分析。(内核同步的方式:per-cpu变量，原子操作，memory barrier, spin lock, 读写spin lock，顺序锁，RCU，信号量)
+
+\subsection{DMR的一些缺点和优化点}
+虽然DMR的进程地址空间的隔离会让开销变大，但它带来的收益远大于其开销
+
+使用进程模拟线程，本身的开销会比较大，
+
+1.迭代式应用的支持kmeans，线程池。
+
+2.会存在大量key/val的分配，动态内存分配，内存池来实现。
 
 
 
