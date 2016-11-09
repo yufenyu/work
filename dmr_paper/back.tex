@@ -1,0 +1,123 @@
+\section{BACKGROUND}
+In this section, we review the MapReduce programming
+model and describe the salient features of Phoenix, 
+an implementation of MapReduce for multicore.
+%讨论Phoenix的局限与不足
+
+\subsection{MapReduce Programing Model}
+The MapReduce programming model is inspired 
+by funnctional languages and 
+propose for data intensive computation in cluster environment.
+It simple programming interface just require programmer 
+defines two primitives: map and reduce.
+The map function is applied on the input data and 
+produces a list of intermediate key and value pairs.
+The reduce function is applied on all intermediate
+pairs and  groups all pairs with the same key to a single
+key/value pair. 
+The combine function is an aptional operation 
+to aggregates the key and value pairs locally in Map Phase 
+aiming to save networking bandwidth and reduce memory consumption.
+
+The charm of MapReduce is that, for algorithms that
+can fit that form, the library hides all the concurrency
+from the programmer. For example, one can count the
+number of occurrences of each word in a body of text as
+follows. The map function emits a word, 1
+pair for each word in document, and the reduce function counts
+all occurrences of a word as the output. The combine function is
+similar to the reduce function, but only processes a partial set of
+key/value pairs.
+
+
+\subsection{Phoenix}
+Phoenix is an implementation of MapReduce for multicore 
+and multiprocessor systems using Pthreads.
+It shows MapReduce is a promising model 
+and applications written with MapReduce model
+have competitive scalability and performance with those
+written with Pthreads\cite{ranger2007phoenix};
+
+Phoenix stores the intermediate key/value pairs produced by the Map calls in a 
+matrix(Figure \ref{fig:phoenix:intermediate}). 
+Eche map and reduce workers can write or read the global buffer. 
+Concurrent Map workers should avoid touching the same data.
+To avoid locking and cache contention costs, when map workers
+and reduce workes operate the buffer concurrently, there are two 
+strategy must be done:\\
+(1) Each row of the buffer is exclusively 
+used by a worker in the Map phase, While each column of the buffer 
+is exclusively used by a Phoenix Reduce worker. \\
+(2) (To avoid map and reduce touching the same data), 
+only When all map worker have been completed, 
+Reduce worker begin working. 
+There is a barrier between Map and Reduce phase.
+
+\begin{figure}[!h!t]  
+    \centering
+    \includegraphics[width=0.45\textwidth]{eps/phoenix_intermediate.eps}
+    \caption{Phoenix intermediate struct}
+    \label{fig:phoenix:intermediate}
+\end{figure}
+
+
+However, the scalability of Phoenix is limited, the performance will be
+better when the number of cores increases from 1 to 4, while the performance will be
+worse if using more than 4 cores. As show in figure \ref{fig:phoenix:speedup}
+%特别地，在32核下，处理的时间甚至已经超过单核处理的时间，这意味着，8核以上，phoenix无法充分利用多核资源。
+
+\begin{figure}[!h!t]  
+    \centering
+    \includegraphics[width=0.45\textwidth]{eps/phoenix_speedup.eps}
+    \caption{speedup of Phoenix}
+    \label{fig:phoenix:speedup}
+\end{figure}
+
+
+\subsection{Optimizing Opportunities of Phoenix}
+Though Phoenix has successfully demonstrated the feasibility
+of running MapReduce applications on multicore, 
+it also comes with some deficiencies when processing jobs with a relatively large
+amount of data, which would be common for machines with abundant memory and CPU cores.
+
+
+
+%调研pthread多线程编程存在的问题，内核数据的共享导致竞争，以及不具有较好的scalability
+{\color{blue} pthreads, with threads increasing, linux scalability will be bad}
+
+First, in cluster environments, 
+the map tasks and reduce tasks are usually 
+executed in different machines and data exchange among
+tasks are done through networking, 
+compared to shared memory in multicore environments. 
+Hence, the contentions on cache and shared data structures, 
+instead of networking communications, 
+are the major performance bottlenecks processing large MapReduce jobs on multicore.
+%phoenix是基于pthread进行编程的，随着核数的增多，spin\_lock的开销越来越多，我们不再采用这种方式，而是使用SPMC编程模型。
+
+Second, there is a strict barrier between the Map and the Reduce
+phase, which requires the MapReduce runtime to keep all the input
+and intermediate data through the Map phase. This requires a large
+amount of resource allocations and comes with a large memory
+footprint. For relatively large input data, this creates pressure on
+the memory systems and taxes the operating systems (e.g., mem-
+ory management), which are with imperfect performance scalabil-
+ity on large scale multicore systems [10]. Further, it also limits
+the effects of some optimizations (such as the combiner) due to re-
+stricted cache and memory locality. For example, the combiner in-
+terface, which is the key to reduce networking traffic of MapReduce
+applications in the cluster environments, was shown to make lit-
+tle performance improvement along with other optimizations (e.g.,
+prefetching).
+
+%Third, different buffer for different applications.
+
+%phoenix需要保持key有序的原因：为了便于reduce做归并。因为每个reduce需要归并一个二维数组的一列，其中key有序，并且每个key对应一个value array，reduce在遍历多个key/val数组时，可以轻松将相同的key对应的多个value归并到一起。因此，phoenix中必须保持每个key有序，且key的value一定要在value array中。
+
+
+Phoenix do not achieve the desired scalability with increasing core count 
+even with a simple, embarrassingly parallel job.
+On a serious note, the internal
+synchronization scheme (e.g., ticket spinlock) of
+the virtualized instance on a machine with higher core count (e.g.,
+32-core) dramatically degrades its overall performance.

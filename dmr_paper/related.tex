@@ -1,0 +1,21 @@
+\section{Related Work}
+\label{sec:rel}
+MapReduce is a popular distributed framework
+for massive-scale parallel data analysis.
+There are many existing implementation of MapReduce 
+which adopt on the basic architecture and 
+programming model of originally Google's MapReduce, 
+such as Hadoop\cite{}, Dryad\cite{isard2007dryad}.
+
+
+The Phoenix MapReduce libray\cite{ranger2007phoenix} 
+is the most relevant work to \myds. 
+Phoenix demostrate that MapReduce is a promising parallel programming
+models in muliticore and multiprocess systems.
+It creates a thread pool by Pthreads
+and can schedule tasks dynamically to support itrative applications.
+\myds differs from Phoenix mainly on that 
+Phoenix need barrier between iterative MapReduce,
+while \myds brokes barrier to speed up computing.
+
+
