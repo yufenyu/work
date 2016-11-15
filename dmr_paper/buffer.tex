@@ -34,7 +34,7 @@ collisions will be rare and the key arrays will be short,
 so that lookup and insert will have cost O(1).
 The hash table's O(1) lookups make it
 particularly attractive for workloads with many repeated keys.
-{\color{green}(the reduce operator is immediately applied
+{\color{gray}(the reduce operator is immediately applied
 to that pair based on the local container. This process is
 performed using a combiner.)}
 Hoverver, our producer-consumer model requires
@@ -76,10 +76,8 @@ it would be more worthwhile to use array buffer.
 %不同于hash buffer, array buffer已经是一块连续的空间，因此无需group阶段，从而可以有小节约时间
 Unlike hash buffer, as array buffer is a contiguous block of memory, 
 DMR no need Group phase.
-
 Furthemore, the memory access pattern of MapReduce
 has poor temporal and spatial locality.%较差的时间和空间的开销
-
 For spatial locality, 
 though the input data is sequentially accessed in the Map phase,
 a large number of key-compare operations results in poor spatial locality. 
@@ -91,7 +89,7 @@ Map just need to . Thus, this technique is more effective
 for array buffer implementation than hash table buffer
 implementation.
 
-(A related problem is that eager pipelining moves some of the
+{\color{gray}(A related problem is that eager pipelining moves some of the
 sorting work from the mapper to the reducer.
 Recall that in the
 blocking architecture, map tasks generate sorted output: all the re-
@@ -101,7 +99,7 @@ put records in the order in which they are generated, so the reducer
 must perform a full external sort. Because the number of map tasks
 typically far exceeds the number of reduces [4], moving more work
 to the reducer can degrade performance.
-)
+)}
 
 
 

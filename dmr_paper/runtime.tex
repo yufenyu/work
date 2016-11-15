@@ -160,19 +160,57 @@ While we don't use queues, mapping will be used in DMR(section 3.2.2).
 \input buffer
 
 \subsubsection{Producer-Consumer model}
-%%对比phoenix采用的pthread，简单阐述SPMC模型的思想，主要的特征（这部分需要看之前SPMC论文进行总结）：进程之间内存隔离，因此避免锁的开销，以页面为单位进行映射，高效且非常低的锁的开销
+The pipelined map and reduce are implemented using a
+producer-consumer model. 
+The map and reduce workers are the producers and consumers, respectively.
+Specially, the map worker generate key-value and 
+put it into the buffer.
+At the same time, 
+the reduce worker is consuming the key-value.
+%由于map和reduce worker共享这个buffer，因此最关键的问题是如何同步
+As the buffer is a shared region of memory in tradition,
+either a map worker or a single reduce worker,
+can access the structure at any given time.
+%使用queue
+In fact, producer-consumer model implementations
+often use a shared queue.
 
-Figure\ref{fig:dmr:spmc} The pipelined map and reduce are implemented using a
-producer-consumer model. The map and reduce workers are
-the producers and consumers, respectively.
+MRphi\cite{lu2013mrphi}design a producer-consumer model 
+to pipeline the map and reduce phases. 
+There are three major data structures, 
+which are local hash tables, a global hash table, 
+and partition queues. 
+Specifically, each map worker has a local hash table. 
+When a local hash table is full,
+key-value pairs stored in this table are partitioned and
+pushed into corresponding queues. 
+Meanwhile, one reduce
+worker works on one queue to merge the key-value pairs to
+the final global hash table.
 
+There three differences DMR and MRphi:
+(1) when the map local hash table is full,
+key-value pairs stored in this table are partitioned and
+pushed into corresponding queues.
+%hash table 数据分布不均匀,如果只是简单的做一个 partition,可能导致有些 reduce task很小,甚至为空。而每次的将 reduce task 加入到 queue 都需要同步的开销
+(2) when map worker insert reduce taskes to the queue of reduce,
+the map worker is stoped to wait.
+%map worker 将 reduce task 插入到 queue 这个过程,需要停下来等待,无形中延迟了 map 的执行时间
+(3)%多个 map worker 会同时对 reduce worker 的 queue 进行操作,需要相应的同步手段,由此会产生等待开销。核数越多,开销会越明显。
+As the queue of reduce worker will be operation by multi map worker,
+
+
+
+
+Figure\ref{fig:dmr:spmc}
 \begin{figure}[!h!t]
     \centering
-    \includegraphics[width=0.45\textwidth]{eps/spmc.eps}
+    \includegraphics[width=0.45\textwidth]{eps/dmr_pc_model.eps}
     \caption{producer-consumer model}
     \label{fig:dmr:spmc}
 \end{figure}
 %SPMC的快速
+{\color{gray}
 In the shared-memory model, a region of memory that is shared
 by cooperating processes is established. 
 Processes can then exchange information 
@@ -181,7 +219,7 @@ Shared memory can be faster.
 since in shared-memory systems, system calls are required only to establish shared-memory regions. 
 Once shared memory is established, all accesses are treated
 as routine memory accesses, and no assistance from the kernel is required.
-
+}
 %SPMC区域的建立
 Interprocess communication using shared memory requires communicating
 processes to establish a region of shared memory. Typically, a shared-memory
@@ -195,24 +233,8 @@ available a buffer of items that can be filled by the producer and emptied by
 the consumer. This buffer will reside in a region of memory that is shared by
 the producer and consumer processes.
 
-%buffer的具体功能，buffer有两种操作，写入和读出的功能，当buffer中的元素达到一个阈值时(通常数据为一页时，reduce就将数据全部读出，并将buffer置空，map继续向buffer中写数据)
-The shared buffer is implemented as a circular array with two logical pointers:
-in and out。
-
-
-%DMR中map和reduce是一种生产者和消费者模型，map产生key/val键值对，reduce消费map产生的中间数据。
-
-
-
-%SPMC模型的一些特征
-%1.与基于Pthread创建的线程不同, 基于该模型创建的线程，地址空间是彼此隔离的，而基于pthread创建的线程，共享主进程的地址空间。这样可以减少多个线程访问mm\_struct结构造成的spin\_lock的开销。
-%2.多个worker之间的通信是基于映射
-
-
-
-% \input detmp
-
 
 
 \subsection{Separate Address Space}
 %先详细分析Phoenix使用线程存在的问题，然后我们采用进程地址空间隔离会有哪些好处
+%虽然MRPhi中也是使用producer-consumer model，DMR不同之处在于，（1）它不需要显示的管理map和reduce间的队列，简单；（2）
