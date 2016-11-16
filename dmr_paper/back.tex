@@ -60,11 +60,15 @@ There is a barrier between Map and Reduce phase.
     \label{fig:phoenix:intermediate}
 \end{figure}
 
+As indicated in this figure\ref{fig:phoenix:speedup}, 
+the Phoenix scales rather well when we use no more than four cores. 
+However, when adding more cores in the system, 
+the curve increases exponentially. 
+The scalability of Phoenix is limited, the performance will be
+better when the number of cores increases from 1 to 4, 
+while the performance will be worse if using more than 4 cores. 
+Perf\cite{} 
 
-However, the scalability of Phoenix is limited, the performance will be
-better when the number of cores increases from 1 to 4, while the performance will be
-worse if using more than 4 cores. As show in figure \ref{fig:phoenix:speedup}
-%特别地，在32核下，处理的时间甚至已经超过单核处理的时间，这意味着，8核以上，phoenix无法充分利用多核资源。
 
 \begin{figure}[!h!t]  
     \centering

@@ -199,7 +199,7 @@ the map worker is stoped to wait.
 (3)%多个 map worker 会同时对 reduce worker 的 queue 进行操作,需要相应的同步手段,由此会产生等待开销。核数越多,开销会越明显。
 As the queue of reduce worker will be operation by multi map worker,
 
-
+t is important for databases and large web and proxy servers to map files into memory instead of having a buffer and reading the file contents into the buffer. If you map the file into memory directly, the operating system has more memory left for I/O buffering.
 
 
 Figure\ref{fig:dmr:spmc}
@@ -231,10 +231,78 @@ segment must attach it to their address space.
 To allow producer and consumer processes to run concurrently, we must have
 available a buffer of items that can be filled by the producer and emptied by
 the consumer. This buffer will reside in a region of memory that is shared by
-the producer and consumer processes.
+the producer and consumer processes.（http://bulk.fefe.de/scalability/）
 
 
 
 \subsection{Separate Address Space}
 %先详细分析Phoenix使用线程存在的问题，然后我们采用进程地址空间隔离会有哪些好处
 %虽然MRPhi中也是使用producer-consumer model，DMR不同之处在于，（1）它不需要显示的管理map和reduce间的队列，简单；（2）
+In addition to global locks like the ones discussed earlier, 
+data structure private locks can also be a problem 
+if the data structure is shared by multiple threads. 
+A standard example here are the mm\_sem read-write semaphore 
+that protects the list of mappings in a process and 
+the pagetable\_lock that protects the pagetable state of a process. 
+These locks are local to a process’ address space. 
+However when the process is using multiple threads 
+then these threads will be able to access the address space in parallel,
+which can cause contention on these locks. 
+A classical example here is 
+the initialization of a large multi-threaded computing job 
+that causes a lot of parallel page-faults. 
+These page-faults will all run into contention on the mm\_sem semaphores. Semaphores are sleeping locks 
+and may run into convoying problems 
+where waiting threads may 
+get stuck at the end of the wait queue for a long time.\cite{Andi2009lmulticore}
+
+Unfortunately these programs are often written to start as many threads as the system has CPUs, 
+but when the system is larger than their scalability limit adding more threads might actually scale negatively.
+The first measure is to limit them to the maximum number of threads that they can successfully scale to.
+This of course leaves some of the CPUs idle. 
+
+
+
+
+There is a sense in the community that traditional kernel
+designs won’t scale well on multicore processors: that
+applications will spend an increasing fraction of their time
+in the kernel as the number of cores increases.
+
+To understand the Linux scalability
+behavior, we analyze the related implementation of Linux
+kernel and exploit performance tools to identify scalability
+bottlenecks.
+
+
+As indicated by this figure, the time of completing
+a workload for one core increases when there are more
+cores in the system. The trend of this curve suggests that
+the parallel scalability of forkbench is poor.
+
+In order to understand the scalability behavior, 
+Perf\cite{} is exploited to collect execution time information
+on the function basis. 
+Experimental results on 32 cores
+show that \_\_ticket\_spin\_lock and 
+default\_send\_IPI\_mask\_sequence\_phys are two functions 
+which have largest execution time with 71.25\% and 10.20\% respectively. 
+
+Performance data reveal that two functions vma link() and
+unlink file vma() have the largest execution time (46.02%
+and 49.97\%) and lock contention. Call-graph information
+and source code analysis show that the two functions are
+called when adding a virtual memory address range into the
+process address space or deleting a virtual memory address range. 
+When multiple slave processes call mmap() or unmap() concurrently, the 
+memory mapped file address range should be added into or 
+deleted from each slave process address space. However, 
+the same spin lock protecting the memory mapped file 
+address range should be held or released. Thus, spin lock 
+contention degrades the parallel scalability performance of 
+the benchmark. 
+
+
+
+The difference between processes and threads under Linux 2.4 is that threads share more parts of their state (address space, file handles etc) than processes, 
+
