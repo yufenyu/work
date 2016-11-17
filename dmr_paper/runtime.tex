@@ -13,9 +13,9 @@ We defer performance results to Section 5.
 \subsection{Execution flow}
 \begin{figure}[!h!t]  
     \centering
-    \includegraphics[width=0.45\textwidth]{eps/dmr.eps}
-    \caption{Deterministic execution flow of DMR}
-    \label{fig:dmr:flow}
+    \includegraphics[width=0.5\textwidth]{eps/dmr_workflow.eps}
+    \caption{The workflow of DMR}
+    \label{fig:dmr:workflow}
 \end{figure}
 
 %不同与Phoenix，DMR将任务队列静态的划分给每个map worker，这样做的好处是，可以避免多个map worker对对任务队列操作从而产生锁的开销。
@@ -30,7 +30,7 @@ by a user-defined map function.
 Map outputs are split into buckets based on key. 
 When all maps have finished, reduce tasks
 apply a reduce function to the list of map outputs with
-each key. Figure\ref{fig:dmr:flow} illustrates a MapReduce computation.
+each key. Figure\ref{fig:dmr:workflow} illustrates a MapReduce computation.
 
 For a reduce task, the execution is divided into
 three phases:
@@ -305,4 +305,3 @@ the benchmark.
 
 
 The difference between processes and threads under Linux 2.4 is that threads share more parts of their state (address space, file handles etc) than processes, 
-
