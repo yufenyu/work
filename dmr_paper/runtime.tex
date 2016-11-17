@@ -128,14 +128,14 @@ can effective improve the overall hardware resource utilization.
 We design a producer-consumer model to pipeline the
 map and reduce phases.
 There are two major data structures,
-which are local buffers pool for map worker and 
+which are local buffers pool for each map worker and 
 a global buffer for reduce worker.
 Specifically, 
 each map worker has a local buffers pool and 
 each buffer for a corresponding reduce worker.
 Partition function will be used to push key-value into a corresponding
 buffer.
-When the buffer threshold isreached,
+When the buffer threshold is reached,
 the corresponding reduce worker can read record in the buffer.
 One reduce worker will get key-value from each map by Round-Robin and 
 merge the key-value pairs to the global buffer.

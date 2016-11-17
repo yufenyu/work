@@ -16,14 +16,16 @@ that holds intermediate data.
 
 % DMR默认的buffer是一个hash buffer, map 产生 key-value,根据hash(key) 确定key-value插入的位置。采用hash buffer的优势在于，key的查找长度比较短，为O(1).但是hash buffer 在出发重新映射之前首先需将分散的 key-value 汇集到一块连续的空间中,通常是数组,我们称这个过程为 group 阶段。通过实验的数据发现,group 的开销相当大。此外,hash buffer 的方式,需要大量的动态内存分配。
 
+%Phoenix中的buffer是一个全局二位数组，这个buffer被多个map worker和reduce worker所共享。为了避免共享buffer的barrier，DMR中我们采用私有的buffer，即每个map worker都拥有自己私有的buffer pool，这可以让Map 和 Reduce阶段并发执行。map worker的buffer pool中有多个buffer，每个buffer用于存放相应reduce worker的数据。当buffer中的数据达到一定的阈值时，便会触发一个send。
+
 Defaultly, buffer is a hash table in DMR.
 and each element is a array of pointers to key arrays,
 where the fixed is by a default value(256);
+% When an intermediate key-value pair is generated
+% by a map function,
+% The hash function is applied to each key-value.
 During the map phase, each map worker uses patition function
 to index the buffer.
-%When an intermediate key-value pair is generated
-%by a map function, 
-%The hash function is applied to each key-value. 
 Once the buffer is determined, 
 the element is indexed by the hash value of the key.
 Inside each entry of a hash table,
@@ -32,46 +34,51 @@ DMR stores the key-value pairs in an array sorted by key.
 If the hash table have enough entries, 
 collisions will be rare and the key arrays will be short,
 so that lookup and insert will have cost O(1).
-The hash table's O(1) lookups make it
-particularly attractive for workloads with many repeated keys.
+The hash table's O(1) lookups 
+make it particularly attractive for workloads with many repeated keys.
 {\color{gray}(the reduce operator is immediately applied
 to that pair based on the local container. This process is
 performed using a combiner.)}
 Hoverver, our producer-consumer model requires
-buffer is a contiguous block of memory, 
+reduce task is a contiguous block of memory, 
 which implies that key-value of hash table should be gathered
 before sending to reduce worker.
-We address this issue by copying values out of the hash tables
-at the end of the map phase and inserting them into a new contiguous array.
+We address this issue by 
+copying values out of the hash tables
+at the end of the map phase and 
+inserting them into a new contiguous array.
 Hence, DMR adds a new internel phase, namely Group,
 to group all key-values together.
 When the size of buffer exceeds a threshold,
 the Group phase will tranverse all key-value to gather them together,
 then send the buffer to reduce worker.
 This extra copy is unfortunate and time-consuming.
-Furthemore, it also requires frequent allocations
-and deallocations of memory 
+Furthemore, 
+it also requires frequent allocations and deallocations of memory 
 along with the data structure creation and destrcution.
 
 %为了提高效率，避免group阶段产生的开销，我们试图改进buffer的hash实现，它不再采用原来 Phoenix 中的 hash 表的组织方式,而是采用更简单的 array,map worker 产生的 key-value只需追加到 array 中即可,无需排序。
 
 %The buffers are initially sized to a default value and then resized dynamically as needed.
-The buffers are initially sized to a default value 
-and then reuse the buffer among sub-jobs.
+The buffers are initially sized to a default value  and 
+then reuse the buffer among sub-jobs.
 It will indicate that the buffer is empty at the end of a sub-job, 
 but will not free the memory until all sub-jobs have finished.
-Each map thread could store its output by appending
-each key/value pair to array buffer, 
+Each map thread could store its output 
+by appending each key/value pair to array buffer, 
+%Map阶段不需要进行排序，而是讲更多排序的工作move给reduce worker
 and then as each sub-job is processed in turn,
 the data structures and memory spaces 
 for the input and intermediate data can be reused across the sub-job boundaries. 
 This avoids the costs of expensive memory allocation and deallocation, 
 as well as the data structures construction。
-This could save the expensive operations such as
+This could save the expensive operations 
+such as
 concurrent memory allocations and deallocations,
 as well as the building of data structures.
 For applications that likely have abundant duplicated keys (or values), 
 it would be more worthwhile to use array buffer.
+
 
 %不同于hash buffer, array buffer已经是一块连续的空间，因此无需group阶段，从而可以有小节约时间
 Unlike hash buffer, as array buffer is a contiguous block of memory, 
@@ -84,10 +91,10 @@ a large number of key-compare operations results in poor spatial locality.
 %Futhermore, 由于 L1 cache 的大小有限,group 阶段在遍历时,会更大的可能性访问不在 L1 cache 中的key-value; 而 array buffer 不需要 group 阶段,因此会更少的 cache miss. 如图7左图所示。从而array buffer 可有效提高性能
 
 
-For the array buffer implementation and no combiner in map phase,
-Map just need to . Thus, this technique is more effective
-for array buffer implementation than hash table buffer
-implementation.
+% For the array buffer implementation and no combiner in map phase,
+% Map just need to . Thus, this technique is more effective
+% for array buffer implementation than hash table buffer
+% implementation.
 
 {\color{gray}(A related problem is that eager pipelining moves some of the
 sorting work from the mapper to the reducer.
