@@ -7,7 +7,7 @@ We describe how our design supports
 piplelining (Section 3.3), and discuss the buffer design (Section 3.4). 
 Our focus here is on Producer-Consumer model; 
 We defer performance results to Section 5.
-
+e
 
 
 \subsection{Execution flow}
@@ -19,66 +19,59 @@ We defer performance results to Section 5.
 \end{figure}
 
 %不同与Phoenix，DMR将任务队列静态的划分给每个map worker，这样做的好处是，可以避免多个map worker对对任务队列操作从而产生锁的开销。
-DMR’s implementation of MapReduce closely resembles Phoenix’s. 
-There is a single master managing a number of slaves. 
-The input file is split into even-sized chunks replicated. 
-DMR divides each MapReduce job into a set of tasks. 
+\myds’s implementation of MapReduce closely resembles Phoenix’s. 
+There is a single master managing a number of slaves worker. 
+Figure\ref{fig:dmr:workflow} illustrates the workflow of \myds,
+including three main phases: map, reduce, and merge. 
+At the beginning, a split function divides the input
+data across workers. 
+On multi-core CPUs, a worker is handled by one thread. 
+A worker usually needs to process multiple input elements. 
+Thus the map function is applied to the input elements one by one. 
+Such an operation of applying the map function for an input element is 
+called a map operation. 
+Each map operation produces intermediate key-value pairs. 
+Then a partition function is applied to these key-value pairs. 
+Then in the reduce phase, each reduce operation
+applies the reduce function to a set of intermediate pairs
+with the same key. 
+Finally the results from multiple reduce workers are merged and output.
 
-Each chunk of input is first processed by a map task, 
-which outputs a list of key-value pairs generated 
-by a user-defined map function. 
-Map outputs are split into buckets based on key. 
-When all maps have finished, reduce tasks
-apply a reduce function to the list of map outputs with
-each key. Figure\ref{fig:dmr:workflow} illustrates a MapReduce computation.
+Compared with existing work, 
+our \myds has two main designment to improve its performance and scalability.
+On the one hand, We propose produce-conumse model to 
+pipeline map and reduce phase. 
+ie. map worker as a producer insert key-value into local buffer,
+and reduce worker as a consumer will fetch key-value from buffer
+when the buffer is full. 
+Reduce phase can start without waiting the Map phase finished.
+On the other hand, \myds use process instead of threads, 
+to avoid contention on the mm\_struct semaphores.
 
-For a reduce task, the execution is divided into
-three phases:
-\begin{itemize}
-  \item The copy phase, when the task fetches map outputs.
-  \item The sort phase, when map outputs are sorted by key.
-  \item The reduce phase, when a user-defined function is
-applied to the list of map outputs with each key.
-\end{itemize}
+%The map phase reads the task’s split from task queue,
+%parses it into key-value pairs, and applies
+%the map function to each record.
+%Intermediate keys are assigned
+%to reducers by applying a partitioning function
+%A spill of the in-memory buffer involves first sorting
+%the records in the buffer by partition number and then by
+%key.
 
-
-
-
-Figure\ref{fig:dmr:flow} shows the data flow for 
-\myds runtime system, 
-including three main phases: map, reduce, and merge.
-There are two key points for DMR runtime comparied to Phoenix.
-First, it schedules map tasks in round-robin manner+
-and add a partition operation for reduce tasks 
-to ensrue deterministic shceduling.
-Second, it broke barrier between map and reduce phase,
-which is neccessary to Phoenix,
-then reducers can start work before all of mappers finished.
-
-The map phase reads the task’s split from task queue,
-parses it into key-value pairs, and applies
-the map function to each record.
-Intermediate keys are assigned
-to reducers by applying a partitioning function
-A spill of the in-memory buffer involves first sorting
-the records in the buffer by partition number and then by
-key.
-
-After receiving its partition from all map outputs, the
-reduce task enters the sort phase. The map output for
-each partition is already sorted by the reduce key. The
-reduce task merges these runs together to produce a sin-
-gle run that is sorted by key. The task then enters the
-reduce phase, in which it invokes the user-defined reduce
-function for each distinct key in sorted order, passing it
-the associated list of values.
-
-We addressed these issues by buffering the mapper output until
-it reaches a certain record threshold.
-When the record threshold isreached, 
-the mapper sends the output to a reducer. 
-Next, Reducer receives its partition from all map, 
-and enters the sort phase.
+%After receiving its partition from all map outputs, the
+%reduce task enters the sort phase. The map output for
+%each partition is already sorted by the reduce key. The
+%reduce task merges these runs together to produce a sin-
+%gle run that is sorted by key. The task then enters the
+%reduce phase, in which it invokes the user-defined reduce
+%function for each distinct key in sorted order, passing it
+%the associated list of values.
+%
+%We addressed these issues by buffering the mapper output until
+%it reaches a certain record threshold.
+%When the record threshold isreached, 
+%the mapper sends the output to a reducer. 
+%Next, Reducer receives its partition from all map, 
+%and enters the sort phase.
 %将之前对combiner和merge阶段的特征进行简单的总结
 {\bf Combiner.}
 In order to maximally reduce memory pressure due to intermediate key-value
@@ -157,7 +150,6 @@ While we don't use queues, mapping will be used in DMR(section 3.2.2).
 %construct the global container. 
 % )
 
-\input buffer
 
 \subsubsection{Producer-Consumer model}
 The pipelined map and reduce are implemented using a
@@ -187,6 +179,10 @@ pushed into corresponding queues.
 Meanwhile, one reduce
 worker works on one queue to merge the key-value pairs to
 the final global hash table.
+% MRPhi的缺点，（1）多对一的竞争问题，（2）队列的管理问题
+{\color{red}They don’t describe, however, how to manage the queue,
+which allocted a space or use malloc}
+
 
 There three differences DMR and MRphi:
 (1) when the map local hash table is full,
@@ -233,9 +229,25 @@ available a buffer of items that can be filled by the producer and emptied by
 the consumer. This buffer will reside in a region of memory that is shared by
 the producer and consumer processes.（http://bulk.fefe.de/scalability/）
 
+\subsubsection{Extention of SPMC}
+
+
+\input buffer
 
 
 \subsection{Separate Address Space}
+
+One reason that widely used operating systems use a lock on the address space is that 
+they use complex index data structures to guarantee O(log n)
+lookup time when a process has many mapped memory
+regions. Linux uses a red-black tree for the regions [27],
+FreeBSD uses a splay tree [1], and Solaris and Windows use
+AVL trees [24, 29]. 
+Because these data structures require re-
+balancing when a memory region is inserted, they protect the
+entire data structure with a single lock.
+
+
 %先详细分析Phoenix使用线程存在的问题，然后我们采用进程地址空间隔离会有哪些好处
 %虽然MRPhi中也是使用producer-consumer model，DMR不同之处在于，（1）它不需要显示的管理map和reduce间的队列，简单；（2）
 In addition to global locks like the ones discussed earlier, 
