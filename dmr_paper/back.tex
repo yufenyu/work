@@ -105,6 +105,9 @@ compared to shared memory in multicore environments.
 Hence, shared data structures , 
 instead of networking communications, 
 are the major performance bottlenecks processing large MapReduce jobs on multicore.
+Multithreaded programs with hybrid shared mutable
+data structures do not scale on multicore.
+They suffer from serious lock contention.
 Multithreaded applications on many-core processors can be
 bottlenecked by contended locks inside the operating system’s
 virtual memory system. 

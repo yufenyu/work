@@ -19,7 +19,7 @@ e
 \end{figure}
 
 %不同与Phoenix，DMR将任务队列静态的划分给每个map worker，这样做的好处是，可以避免多个map worker对对任务队列操作从而产生锁的开销。
-\myds’s implementation of MapReduce closely resembles Phoenix’s. 
+\myds's implementation of MapReduce closely resembles Phoenix’s. 
 There is a single master managing a number of slaves worker. 
 Figure\ref{fig:dmr:workflow} illustrates the workflow of \myds,
 including three main phases: map, reduce, and merge. 
@@ -153,7 +153,7 @@ While we don't use queues, mapping will be used in DMR(section 3.2.2).
 % )
 
 
-\subsubsection{Producer-Consumer model}
+\subsection{Producer-Consumer model}
 The pipelined map and reduce are implemented using a
 producer-consumer model. 
 The map and reduce workers are the producers and consumers, respectively.
@@ -161,7 +161,6 @@ Specially, the map worker generate key-value and
 put it into the buffer.
 At the same time, 
 the reduce worker is consuming the key-value.
-%由于map和reduce worker共享这个buffer，因此最关键的问题是如何同步
 As the buffer is a shared region of memory in tradition,
 either a map worker or a single reduce worker,
 can access the structure at any given time.
@@ -169,7 +168,7 @@ can access the structure at any given time.
 In fact, producer-consumer model implementations
 often use a shared queue.
 
-MRphi\cite{lu2013mrphi}design a producer-consumer model 
+MRPhi\cite{lu2013mrphi}design a producer-consumer model 
 to pipeline the map and reduce phases. 
 There are three major data structures, 
 which are local hash tables, a global hash table, 
@@ -182,22 +181,28 @@ Meanwhile, one reduce
 worker works on one queue to merge the key-value pairs to
 the final global hash table.
 % MRPhi的缺点，（1）多对一的竞争问题，（2）队列的管理问题
-{\color{red}They don’t describe, however, how to manage the queue,
-which allocted a space or use malloc}
 
+However, there are two main defects of producer-consumer model in MRPhi.
+Firstly, multiple map worker will append data to the tail of queue {\color{gray}contendly}. 
+when one thread is appending, any thread waiting to append is stalled.
+That means more time spent in waiting lock.
+Secondly, They don’t describe, however, how to manage the queue,
+which using a allocted space or by dynamic memory allocation.
+if using a allocated space, when the queue is full, 
+the producer will blocking waiting for a slot in the queue.
+it is bad for parallelion excution of Map and Reduce.
+if dynamic memory allocation, 
+map no need waiting, while there will have a large number of malloc and free,
+which causing overhead.
 
-There three differences DMR and MRphi:
-(1) when the map local hash table is full,
-key-value pairs stored in this table are partitioned and
-pushed into corresponding queues.
-%hash table 数据分布不均匀,如果只是简单的做一个 partition,可能导致有些 reduce task很小,甚至为空。而每次的将 reduce task 加入到 queue 都需要同步的开销
-(2) when map worker insert reduce taskes to the queue of reduce,
-the map worker is stoped to wait.
-%map worker 将 reduce task 插入到 queue 这个过程,需要停下来等待,无形中延迟了 map 的执行时间
-(3)%多个 map worker 会同时对 reduce worker 的 queue 进行操作,需要相应的同步手段,由此会产生等待开销。核数越多,开销会越明显。
-As the queue of reduce worker will be operation by multi map worker,
+{\color{red} our tagert of designing the produce-consume model}
+In \myds, it is a one to one producer-consumer model, 
+avoiding the contention of multiple map workers.
+on the other hand,
+we use the a special mapping to allow producer and consumer parallelization effectively, without waiting when the queue is full, or malloc and free operations.
 
-t is important for databases and large web and proxy servers to map files into memory instead of having a buffer and reading the file contents into the buffer. If you map the file into memory directly, the operating system has more memory left for I/O buffering.
+%has to maintain a queue of threads waiting for that monitor
+%It is important for databases and large web and proxy servers to map files into memory instead of having a buffer and reading the file contents into the buffer. If you map the file into memory directly, the operating system has more memory left for I/O buffering.
 
 \begin{figure*}
 \centering
@@ -221,32 +226,34 @@ t is important for databases and large web and proxy servers to map files into m
 \label{fig:dmr:spmc}
 \end{figure*}
 
-Figure\ref{fig:dmr:spmc}
-{\color{gray}
-In the shared-memory model, a region of memory that is shared
-by cooperating processes is established. 
-Processes can then exchange information 
-by reading and writing data to the shared region.
-Shared memory can be faster.
-since in shared-memory systems, system calls are required only to establish shared-memory regions. 
-Once shared memory is established, all accesses are treated
-as routine memory accesses, and no assistance from the kernel is required.
-}
-%SPMC区域的建立
-Interprocess communication using shared memory requires communicating
-processes to establish a region of shared memory. Typically, a shared-memory
-region resides in the address space of the process creating the shared-memory
-segment. Other processes that wish to communicate using this shared-memory
-segment must attach it to their address space. 
-
-%SPMC区域的使用，对应buffer
-To allow producer and consumer processes to run concurrently, we must have
-available a buffer of items that can be filled by the producer and emptied by
-the consumer. This buffer will reside in a region of memory that is shared by
-the producer and consumer processes.（http://bulk.fefe.de/scalability/）
+%{\color{gray}
+%In the shared-memory model, a region of memory that is shared
+%by cooperating processes is established. 
+%Processes can then exchange information 
+%by reading and writing data to the shared region.
+%Shared memory can be faster.
+%since in shared-memory systems, system calls are required only to establish shared-memory regions. 
+%Once shared memory is established, all accesses are treated
+%as routine memory accesses, and no assistance from the kernel is required.
+%}
+%%SPMC区域的建立
+%Interprocess communication using shared memory requires communicating
+%processes to establish a region of shared memory. Typically, a shared-memory
+%region resides in the address space of the process creating the shared-memory
+%segment. Other processes that wish to communicate using this shared-memory
+%segment must attach it to their address space. 
+%
+%%SPMC区域的使用，对应buffer
+%To allow producer and consumer processes to run concurrently, we must have
+%available a buffer of items that can be filled by the producer and emptied by
+%the consumer. This buffer will reside in a region of memory that is shared by
+%the producer and consumer processes.（http://bulk.fefe.de/scalability/）
 
 \subsubsection{Extention of SPMC}
+Figure\ref{fig:dmr:spmc}
 
+Thus, this parallelization effectively decouples the behavior of proucer and conusmer, and allows them to be overlapped 
+without many malloc and free.
 
 \input buffer
 
