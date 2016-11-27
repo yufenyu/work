@@ -45,8 +45,10 @@ ie. map worker as a producer insert key-value into local buffer,
 and reduce worker as a consumer will fetch key-value from buffer
 when the buffer is full. 
 Reduce phase can start without waiting the Map phase finished.
-On the other hand, \myds use process instead of threads, 
-to avoid contention on the mm\_struct semaphores.
+On the other hand, \myds implemente a worker as single-threaded process 
+instead of as a single multi-thread process.
+Then workers will be in the isolated address space 
+avoiding contention on a single lock per shared address space.
 
 %The map phase reads the task’s split from task queue,
 %parses it into key-value pairs, and applies
@@ -197,15 +199,29 @@ As the queue of reduce worker will be operation by multi map worker,
 
 t is important for databases and large web and proxy servers to map files into memory instead of having a buffer and reading the file contents into the buffer. If you map the file into memory directly, the operating system has more memory left for I/O buffering.
 
+\begin{figure*}
+\centering
+ \subfigure[]{
+  \label{fig:spmc:kernext:a}  
+  \includegraphics[width=0.23\textwidth]{eps/spmckern-ext0.eps}
+ }
+ \subfigure[]{
+  \label{fig:spmc:kernext:b}  
+  \includegraphics[width=0.23\textwidth]{eps/spmckern-ext2.eps}
+ }
+ \subfigure[]{
+  \label{fig:spmc:kernext:c}  
+  \includegraphics[width=0.23\textwidth]{eps/spmckern-ext3.eps}
+ }
+ \subfigure[]{
+  \label{fig:spmc:kernext:d}  
+  \includegraphics[width=0.23\textwidth]{eps/spmckern-ext4.eps}
+ }
+\caption{Mechanism of SPMC virtual memory with lazy page mapping and space extension.}
+\label{fig:dmr:spmc}
+\end{figure*}
 
 Figure\ref{fig:dmr:spmc}
-\begin{figure}[!h!t]
-    \centering
-    \includegraphics[width=0.45\textwidth]{eps/dmr_pc_model.eps}
-    \caption{producer-consumer model}
-    \label{fig:dmr:spmc}
-\end{figure}
-%SPMC的快速
 {\color{gray}
 In the shared-memory model, a region of memory that is shared
 by cooperating processes is established. 
