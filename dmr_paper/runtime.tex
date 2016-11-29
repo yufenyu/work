@@ -153,7 +153,7 @@ While we don't use queues, mapping will be used in DMR(section 3.2.2).
 % )
 
 
-\subsection{Producer-Consumer model}
+\subsubsection{Producer-Consumer model}
 The pipelined map and reduce are implemented using a
 producer-consumer model. 
 The map and reduce workers are the producers and consumers, respectively.
@@ -161,29 +161,30 @@ Specially, the map worker generate key-value and
 put it into the buffer.
 At the same time, 
 the reduce worker is consuming the key-value.
-As the buffer is a shared region of memory in tradition,
-either a map worker or a single reduce worker,
-can access the structure at any given time.
+%As the buffer is a shared region of memory in tradition,
+%either a map worker or a single reduce worker,
+%can access the structure at any given time.
 %使用queue
-In fact, producer-consumer model implementations
-often use a shared queue.
-
+%In fact, producer-consumer model implementations
+%often use a shared queue.
 MRPhi\cite{lu2013mrphi}design a producer-consumer model 
 to pipeline the map and reduce phases. 
-There are three major data structures, 
-which are local hash tables, a global hash table, 
-and partition queues. 
-Specifically, each map worker has a local hash table. 
+%There are three major data structures, 
+%which are local hash tables, a global hash table, 
+%and partition queues. Specifically, 
+Each map worker has a local hash table. 
 When a local hash table is full,
 key-value pairs stored in this table are partitioned and
 pushed into corresponding queues. 
 Meanwhile, one reduce
 worker works on one queue to merge the key-value pairs to
 the final global hash table.
+
 % MRPhi的缺点，（1）多对一的竞争问题，（2）队列的管理问题
 
 However, there are two main defects of producer-consumer model in MRPhi.
-Firstly, multiple map worker will append data to the tail of queue {\color{gray}contendly}. 
+Firstly, The queue used in MRPhi is a many-to-one queue.
+Multiple map worker will append data to the tail of queue {\color{gray}contendly}. 
 when one thread is appending, any thread waiting to append is stalled.
 That means more time spent in waiting lock.
 Secondly, They don’t describe, however, how to manage the queue,
@@ -195,36 +196,37 @@ if dynamic memory allocation,
 map no need waiting, while there will have a large number of malloc and free,
 which causing overhead.
 
-{\color{red} our tagert of designing the produce-consume model}
-In \myds, it is a one to one producer-consumer model, 
+\begin{figure}[!h!t]  
+    \centering
+    \includegraphics[width=0.4\textwidth]{eps/dmr_channel.eps}
+    \caption{Produce-Consume model in SMR}
+    \label{fig:dmr:pc-model}
+\end{figure}
+%为了避免上述producer-consumer模型的问题，我们重新设计，并且希望它
+{\color{red} our tagert of designing the produce-consume model}\\
+
+Figure.\ref{fig:dmr:pc-model} shows producer-conusmer model in our \myds.  
+There is a one to one channel between map worker and reduce worker, 
 avoiding the contention of multiple map workers.
+When the buffer is full, map worker send the buffer to channel, 
+at the same time, 
+reduce worker receive data from channel, and copy it to local buffer.
 on the other hand,
-we use the a special mapping to allow producer and consumer parallelization effectively, without waiting when the queue is full, or malloc and free operations.
+we use the a special mapping to allow producer and consumer parallelization effectively, 
+without waiting when the queue is full, or malloc and free operations.
+When the local buffer is full,
+it send the data to channel and then use the buffer again.
+That means map no need wait and there is no many malloc and free operations.
+Figure\ref{fig:dmr:pc-model}
+Thus, this parallelization effectively decouples the behavior of proucer and conusmer, and allows them to be overlapped 
+without many malloc and free.
+
+In Section\ref{} we will present the design of Channel.
 
 %has to maintain a queue of threads waiting for that monitor
 %It is important for databases and large web and proxy servers to map files into memory instead of having a buffer and reading the file contents into the buffer. If you map the file into memory directly, the operating system has more memory left for I/O buffering.
 
-\begin{figure*}
-\centering
- \subfigure[]{
-  \label{fig:spmc:kernext:a}  
-  \includegraphics[width=0.23\textwidth]{eps/spmckern-ext0.eps}
- }
- \subfigure[]{
-  \label{fig:spmc:kernext:b}  
-  \includegraphics[width=0.23\textwidth]{eps/spmckern-ext2.eps}
- }
- \subfigure[]{
-  \label{fig:spmc:kernext:c}  
-  \includegraphics[width=0.23\textwidth]{eps/spmckern-ext3.eps}
- }
- \subfigure[]{
-  \label{fig:spmc:kernext:d}  
-  \includegraphics[width=0.23\textwidth]{eps/spmckern-ext4.eps}
- }
-\caption{Mechanism of SPMC virtual memory with lazy page mapping and space extension.}
-\label{fig:dmr:spmc}
-\end{figure*}
+
 
 %{\color{gray}
 %In the shared-memory model, a region of memory that is shared
@@ -249,94 +251,8 @@ we use the a special mapping to allow producer and consumer parallelization effe
 %the consumer. This buffer will reside in a region of memory that is shared by
 %the producer and consumer processes.（http://bulk.fefe.de/scalability/）
 
-\subsubsection{Extention of SPMC}
-Figure\ref{fig:dmr:spmc}
 
-Thus, this parallelization effectively decouples the behavior of proucer and conusmer, and allows them to be overlapped 
-without many malloc and free.
 
 \input buffer
 
 
-\subsection{Separate Address Space}
-
-One reason that widely used operating systems use a lock on the address space is that 
-they use complex index data structures to guarantee O(log n)
-lookup time when a process has many mapped memory
-regions. Linux uses a red-black tree for the regions [27],
-FreeBSD uses a splay tree [1], and Solaris and Windows use
-AVL trees [24, 29]. 
-Because these data structures require re-
-balancing when a memory region is inserted, they protect the
-entire data structure with a single lock.
-
-
-%先详细分析Phoenix使用线程存在的问题，然后我们采用进程地址空间隔离会有哪些好处
-%虽然MRPhi中也是使用producer-consumer model，DMR不同之处在于，（1）它不需要显示的管理map和reduce间的队列，简单；（2）
-In addition to global locks like the ones discussed earlier, 
-data structure private locks can also be a problem 
-if the data structure is shared by multiple threads. 
-A standard example here are the mm\_sem read-write semaphore 
-that protects the list of mappings in a process and 
-the pagetable\_lock that protects the pagetable state of a process. 
-These locks are local to a process’ address space. 
-However when the process is using multiple threads 
-then these threads will be able to access the address space in parallel,
-which can cause contention on these locks. 
-A classical example here is 
-the initialization of a large multi-threaded computing job 
-that causes a lot of parallel page-faults. 
-These page-faults will all run into contention on the mm\_sem semaphores. Semaphores are sleeping locks 
-and may run into convoying problems 
-where waiting threads may 
-get stuck at the end of the wait queue for a long time.\cite{Andi2009lmulticore}
-
-Unfortunately these programs are often written to start as many threads as the system has CPUs, 
-but when the system is larger than their scalability limit adding more threads might actually scale negatively.
-The first measure is to limit them to the maximum number of threads that they can successfully scale to.
-This of course leaves some of the CPUs idle. 
-
-
-
-
-There is a sense in the community that traditional kernel
-designs won’t scale well on multicore processors: that
-applications will spend an increasing fraction of their time
-in the kernel as the number of cores increases.
-
-To understand the Linux scalability
-behavior, we analyze the related implementation of Linux
-kernel and exploit performance tools to identify scalability
-bottlenecks.
-
-
-As indicated by this figure, the time of completing
-a workload for one core increases when there are more
-cores in the system. The trend of this curve suggests that
-the parallel scalability of forkbench is poor.
-
-In order to understand the scalability behavior, 
-Perf\cite{} is exploited to collect execution time information
-on the function basis. 
-Experimental results on 32 cores
-show that \_\_ticket\_spin\_lock and 
-default\_send\_IPI\_mask\_sequence\_phys are two functions 
-which have largest execution time with 71.25\% and 10.20\% respectively. 
-
-Performance data reveal that two functions vma link() and
-unlink file vma() have the largest execution time (46.02%
-and 49.97\%) and lock contention. Call-graph information
-and source code analysis show that the two functions are
-called when adding a virtual memory address range into the
-process address space or deleting a virtual memory address range. 
-When multiple slave processes call mmap() or unmap() concurrently, the 
-memory mapped file address range should be added into or 
-deleted from each slave process address space. However, 
-the same spin lock protecting the memory mapped file 
-address range should be held or released. Thus, spin lock 
-contention degrades the parallel scalability performance of 
-the benchmark. 
-
-
-
-The difference between processes and threads under Linux 2.4 is that threads share more parts of their state (address space, file handles etc) than processes, 
