@@ -1,0 +1,37 @@
+{\footnotesize%scriptsize
+\begin{tabularx}{0.49\textwidth}{@{}p{0.05\textwidth}l}
+\multicolumn{2}{l}{
+\code{int thread\_alloc(int gid)}
+}\\
+& 
+Allocate a child thread of global ID %\kn{gid} 
+and return its internal ID.
+\\
+\multicolumn{2}{l}{
+\code{int thread\_start(int child, void *(*fn)(void*), void *args)}
+}\\
+& 
+Start the given child to run \code{(*fn)(args)}.
+\\
+%\multicolumn{2}{l}{
+%\code{void thread\_join(int child)}
+%}\\
+%&
+%Wait for the child to terminate, merging the control flow.
+%\\
+%\multicolumn{2}{l}{
+%\code{int thread\_ret()}
+%}\\
+%&
+%Return to its parent thread.
+%\\
+%\multicolumn{2}{l}{
+%\code{int thread\_sync(int child)}
+%}\\
+%&
+%Wait for the child to return, then restart the child again.
+%\\
+\end{tabularx}
+}
+
+

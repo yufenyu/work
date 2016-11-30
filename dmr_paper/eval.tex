@@ -14,6 +14,7 @@ the lowest and the highest runtimes for each workload are discarded,
 and thus each result is the average of the remaining 8 runs.
 
 \subsection{Performance of benchmarks}
+%描述benchmarks的特点，benchmarks的数据集等
 
 \begin{figure}[htpb]
 \centering
@@ -131,7 +132,52 @@ while it is just about 0.001s in Phoenix.
    \label{fig:time}
 \end{figure}
 
+\subsection{Diff buffer performance}
 
+As the number of threads increases (from 1 to 8), the
+execution time decreases for all cases. For 9 to 32 threads,
+both Phoenix and \myds execution times keep decreasing with
+the increase of the number of threads
+When the number of dependent processes increases above the
+number of cores, 
+%context switching takes place, 
+serious contending lock takes place,
+and as a resultexecution time will be drastically increased. 
+As the number of threads increases from 32 to 33, 
+there is a significant increase
+in execution time owing to Opteron’s NUMA architecture with
+point-to-point communication links.
 
+On the workstation, the \myds implementation is 13\%-
+95\% better than Phoenix implementation (peaking at 8
+threads).
 
+As the number of threads increases (from 1 to 8), the
+execution times for both Pthread/C and MPI programs decrease
+for both workstation and supercomputer. For 9 threads to 32
+threads, Pthread/C and MPI execution times changes slightly
+on workstation. However for 9 threads to 32 threads, both
+Pthread/C and MPI execution times keep decreasing (in most
+cases) with the increase in number of threads on the
+supercomputer node. This is because we use 8 cores in the
+workstation while we use 32 cores in the supercomputer node.
+Execution time for large number of threads (9 to 33 and
+beyond) remains almost the same for the workstation because
+of no communication overhead. Results (see Figure 4) also
+show that MPI execution time on supercomputer increases
+significantly when the number of threads is increased from 32
+to 33 and beyond; but Pthread/C execution time on
+supercomputer remains almost unchanged. This is due to the
+communication overhead among the cores (32 cores in a
+supercomputer node) when using MPI message passing.
+
+From the
+experimental results, it is observed that both computer systems
+yield better performance using Pthread than MPI (in most
+cases). Pthread has the advantage over MPI for sharing
+memory and distributing tasks among lightweight threads
+instead of processes. The performance of the Pthread
+implementation on the supercomputer is the best, 30%-6.7x
+better than the Open MPI implementation on the
+supercomputer node.
 

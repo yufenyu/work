@@ -6,6 +6,14 @@
 %一方面，随着多核机器的广泛普及，如何充分利用多核资源成为非常重要的课题，另一方面，现有的很多我们希望充分利用单台机器上的资源，
 
 
+
+Parallel programming is becoming more and more popular
+because of its potential to improve performance, especially in
+multicore architectures. In the past, computer software has
+been written using serial computation concepts which is
+usually less efficient than multithreaded parallel computation.
+
+
 As the prevalence of multicore chips,
 it is foreseeable
 that tens to hundreds (even thousands) of cores on a single chip
@@ -24,6 +32,20 @@ ber of key/value pairs; and Reduce, which aggregates values in the
 key/value pairs according to the key.
 And the programmer dose no need to control synchronization 
 and schedule tasks manually.
+
+Parallel computing concept is a rapidly-growing field,
+but many problems do not currently scale well onto multiple
+processors. In many cases, much of the benefit of parallelism is
+lost because of inefficiencies in the parallel program structure
+
+
+Ideally, adding more MPI processes to the simulation
+would bring about a linear decrease in execution time and
+power consumption.
+However, the benefits of adding more
+processes will be reduced due to overhead associated with the
+additional processes – the communication delay and
+ dependencies among the process [5, 6]
 
 While initially MapReduce is implemented on clusters, Ranger
 et al. have demonstrated the feasibility of running MapReduce
@@ -45,6 +67,8 @@ avoids the expensive network communications among tasks.
 Though Phoenix has demonstrated the applicability of running
 MapReduce on multicore, the scalability of Phoenix is limited 
 due to its way of processing input data and Pthreads library.
+POSIX Threads (usually referred as Pthreads)
+is a POSIX standard for threads.
 As a result, the performance will be better 
 when the number of cores increases from 1 to 4, 
 while the performance will be worse if using more than 4 cores.  
@@ -79,5 +103,11 @@ ous MapReduce jobs over data streams and demonstrate
 an example of near-real-time cluster monitoring. We
 present initial performance results in Section 6. Related
 and future work are covered in Sections 7 and 8.
+
+This paper is organized as follows. In section 2, we review
+the background. Section 3 briefly describes the problems.
+Section 4 presents the experimental setup. Section 5 discusses
+the results in terms of execution time and total power
+consumption. Finally, Section 6 concludes the paper.
 
 
