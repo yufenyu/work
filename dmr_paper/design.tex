@@ -17,15 +17,17 @@ the parallel scalability of Phoenix is poor.
 In order to understand the scalability behavior, 
 Perf\cite{} is exploited to collect execution time information
 on the function basis. 
+Experimental results show that Phoenix suffer from serious lock contention
+when the core count exceeds 8.
 Figure\ref{fig:phoenix:spinlock} shows the percent of \_\_ticket\_spin\_lock of each benchmark.
 Histgram on 16cores and 32 cores
 show that \_\_ticket\_spin\_lock is one function 
 which have largest execution time with 71.25\% and 40.15\% respectively. 
-Experimental results show that Phoenix suffer from serious lock contention
-when the core count exceeds 8.
-\bluet{From Seciton2.2, Phoenix takes two strategies to avoid lock contention.
+\bluet{That means Phoenix waster most of time to wait but not actual work.
+And it can't fully use mulitcores resource.
+From Seciton2.2 we know, Phoenix takes two strategies to avoid multiple threads operate the global buffer concurrently.
 Why the benchmarks suffer from serious lock contention?
-It caused by linux kernel.}
+Actually, it caused by linux kernel.}
 \begin{figure}[!h!t]  
     \centering
     \includegraphics[width=0.35\textwidth]{eps/phoenix_spinlock.eps}
@@ -35,14 +37,15 @@ It caused by linux kernel.}
 
 
 %Phoenix采取了划分和barrier的方式，以避免多个线程对共享区域的的竞争，为什么还会存在如此高的spinlock呢，
-There is a sense in the community that traditional kernel
-designs won’t scale well on multicore processors: that
-applications will spend an increasing fraction of their time
-in the kernel as the number of cores increases.
-To understand the Linux scalability
-behavior, we analyze the related implementation of Linux
-kernel and exploit performance tools to identify scalability
-bottlenecks.
+%\grayt{There is a sense in the community that traditional kernel
+%designs won’t scale well on multicore processors: that
+%applications will spend an increasing fraction of their time
+%in the kernel as the number of cores increases.
+%To understand the Linux scalability
+%behavior, we analyze the related implementation of Linux
+%kernel and exploit performance tools to identify scalability
+%bottlenecks.
+%}
 
 Data structure private locks can be a problem 
 if the data structure is shared by multiple threads. 
@@ -72,6 +75,23 @@ Thus, spin lock
 contention degrades the parallel scalability performance of 
 the benchmark. 
 
+One reason that widely used operating systems 
+use a lock on the address space is 
+that they use complex index data structures to guarantee O(log n)
+lookup time when a process has many mapped memory
+regions. Linux uses a red-black tree for the regions\cite{linux}. 
+Because the data structures require rebalancing 
+when a memory region is inserted, 
+they protect the entire data structure with a single lock.
+The lock is local to a process address space.
+when the process is using multiple threads 
+then these threads will be able to access
+the address space in parallel, 
+which can cause contention on the lock.
+%随着核数的增多，这种问题会更加突出，最好导致较差的scalability
+\bluet{As the increasing of cores number, 
+the scalability will be bad.
+}
 
 %Unfortunately these programs are often written to start as many threads as the system has CPUs, 
 %but when the system is larger than their scalability limit adding more threads might actually scale negatively.
@@ -96,32 +116,20 @@ the benchmark.
 
 %The difference between processes and threads under Linux 2.4 is that threads share more parts of their state (address space, file handles etc) than processes, 
 
-\subsection{Separate Address Space}
+\subsection{Scalable thread model}
 %这一部分，我们不提生产消费模型，
 %为什么要进行地址空间隔离，通过新的线程模型，我们实现了地址空间隔离，隔离之后有什么好处？相比Phoenix，我们这种新的模型会不会带来开销。
-One reason that widely used operating systems 
-use a lock on the address space is 
-that they use complex index data structures to guarantee O(log n)
-lookup time when a process has many mapped memory
-regions. Linux uses a red-black tree for the regions\cite{linux}. 
-Because the data structures require rebalancing 
-when a memory region is inserted, 
-they protect the entire data structure with a single lock.
-The lock is local to a process address space.
-when the process is using multiple threads 
-then these threads will be able to access
-the address space in parallel, 
-which can cause contention on the lock.
-%随着核数的增多，这种问题会更加突出，最好导致较差的scalability
-\bluet{As the increasing of cores number, 
-the scalability will be bad.
-}
 
 Our goal is to make page faults scale to 
 large numbers of cores.
+There are many way to achive this target such as \cite{Clements2012Scalable}\redt{...}.
+However, We don't want to change the implementation of operating system, 
+but just provoid a easy-to-use scalable thread model.
 This requires addressing a basic problem,
-How allow page faults to run concurrently to eliminate on the per-process read/write lock.
-This is difficult because of complicates sharing.
+how allow page faults to run concurrently 
+to eliminate on the per-process read/write lock.
+In fact, if applications use processes instead of threads can avoid a single, 
+shared address space, but this complicates sharing.
 
 To achieve our goal, this paper persents a new concurrent address space design that eliminates the above sources of contention by applying a new program model and by introducing channel, a way to share data between threads.
 We aim at providing an race-free programming abstraction 
@@ -255,7 +263,6 @@ are freed automatically when the counts reach zero.
 %\end{figure*}
 
 %最后，结合mapreduce来说明这种结构的优势在何处
-
 
 
 

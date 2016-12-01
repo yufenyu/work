@@ -2,6 +2,7 @@
 In this section, we review the MapReduce programming
 model and describe the salient features of Phoenix, 
 an implementation of MapReduce for multicore.
+Then we analyze the limited performance of Phoenix.
 %讨论Phoenix的局限与不足
 
 \subsection{MapReduce Programing Model}
@@ -38,8 +39,8 @@ and applications written with MapReduce model
 have competitive scalability and performance with those
 written with Pthreads\cite{ranger2007phoenix};
 
-Phoenix stores the intermediate key/value pairs produced by the Map calls in a 
-matrix(Figure \ref{fig:phoenix:intermediate}). 
+Phoenix stores the intermediate key-value pairs produced 
+by the Map calls in a matrix(Figure \ref{fig:phoenix:intermediate}). 
 Eche map and reduce workers can write or read the global buffer. 
 Concurrent Map workers should avoid touching the same data.
 To avoid locking and cache contention costs, when map workers
@@ -47,11 +48,11 @@ and reduce workes operate the buffer concurrently, there are two
 strategy must be done:\\
 (1) Each row of the buffer is exclusively 
 used by a worker in the Map phase, While each column of the buffer 
-is exclusively used by a Phoenix Reduce worker. \\
-(2) (To avoid map and reduce touching the same data), 
-only When all map worker have been completed, 
-Reduce worker begin working. 
-There is a barrier between Map and Reduce phase.
+is exclusively used by a reduce worker. \\
+(2) There is a barrier between Map and Reduce phase.
+Only when all map workers have been completed, 
+reduce workers can begin to work. 
+
 
 \begin{figure}[!h!t]  
     \centering
@@ -67,7 +68,7 @@ the curve increases exponentially.
 The scalability of Phoenix is limited, the performance will be
 better when the number of cores increases from 1 to 4, 
 while the performance will be worse if using more than 4 cores. 
-Perf\cite{} 
+Perf\cite{}.\redt{need to talk more about the results...}
 
 
 \begin{figure}[!h!t]  
@@ -82,15 +83,14 @@ Perf\cite{}
 Though Phoenix has successfully demonstrated the feasibility
 of running MapReduce applications on multicore, 
 it also comes with some deficiencies 
-{\color{gray}when processing jobs with a relatively large
-amount of data, which would be common for machines with abundant memory and CPU cores
-}.
+when processing jobs with a relatively large
+amount of threads, which would be common for parallel programming with shared-memory multithreading.
 
 First, there is a strict barrier between the Map and the Reduce phase, 
 which requires workers in Reduce phase can only 
 be startd until all workers in Map phase has been finished. 
 Hence, the execution time of Map phase is determined by the slowest map worker.
-If one of a map woker is slow, then the runtime of MapReduce will be need more time.
+\bluet{If one of a map woker is slow, then the runtime of MapReduce will be need more time.}
 Futher, as the user-defined map functions are usually computation-intensive,
 while the Reduce phase is memory-intensive,
 the barrier is bad for the overall hardware resource utilization.
@@ -117,15 +117,16 @@ have a single lock per shared address space.
 \cite{clements2013radixvm}
 
 
-Phoenix do not achieve the desired scalability with increasing core count 
+\bluet{Phoenix do not achieve the desired scalability with increasing core count 
 even with a simple, embarrassingly parallel job.
 On a serious note, the internal
-synchronization scheme (e.g., ticket spinlock) of
+synchronization strategy (e.g., ticket spinlock) of
 the virtualized instance on a machine with higher core count (e.g.,
-32-core) dramatically degrades its overall performance.
-
-{\color{red}our target of \myds}
+32-core) dramatically degrades its overall performance.}
+{\color{red}our target of \myds, 
+We will present a new programming model to avoid the contention bewteen threads.
+we will use a producer-conusmer mode to pipeline map and reduce,
+therefore making the frameworker more efficient.}
 %为了避免上述提到的问题，我们希望我们新设计的系统，拥有以下两个特性(1)break barrier (2)，提升scalability
-
 
 

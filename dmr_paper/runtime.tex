@@ -44,11 +44,11 @@ pipeline map and reduce phase.
 ie. map worker as a producer insert key-value into local buffer,
 and reduce worker as a consumer will fetch key-value from buffer
 when the buffer is full. 
-Reduce phase can start without waiting the Map phase finished.
-On the other hand, \myds implemente a worker as single-threaded process 
+Therefore reduce phase can start without waiting the Map phase finished.
+On the other hand, \myds implemente a worker as \myth thread 
 instead of as a single multi-thread process.
 Then workers will be in the isolated address space 
-avoiding contention on a single lock per shared address space.
+avoiding contention on a single per-process lock.
 
 %The map phase reads the task’s split from task queue,
 %parses it into key-value pairs, and applies
@@ -77,7 +77,9 @@ avoiding contention on a single lock per shared address space.
 %将之前对combiner和merge阶段的特征进行简单的总结
 {\bf Combiner.}
 In order to maximally reduce memory pressure due to intermediate key-value
-storage.%通道的数据流通量(map和reduce见传递的数据量)
+storage.
+To reduce the amount of communication between mappers and reducers, a mapper
+can combine its produced key/value pairs with the same key
 %做法，开销，优势，我们的特点，可以在reduce阶段进行combiner
 The imbalance of tasks can be solved by dynamic scheduling in the Map phase. 
 %%事实上，为了防止出现数据倾斜的问题，即map阶段的很多key都发送到一个reduce，导致某个reduce有过多的动态内存分配，甚至可能出现内存不够的情况，我们可以对reduce的数据做局部的combiner
@@ -86,10 +88,18 @@ The imbalance of tasks can be solved by dynamic scheduling in the Map phase.
 %it is not always feasible to generate a large number reduce tasks for
 %%dynamic scheduling.
 
-{\bf merge.}
+{\bf Merge.}
 Each Reduce generates a set of output key/value
 pairs, and the library’s Merge phase sorts them by key to
 produce the final output. 
+A MapReduce job may declare reduce function as NULL. 
+For such an application, 
+Phoenix still performs reduction on the intermediate data using a default reduce function, 
+which traverses key-value pairs. 
+This approach is inefficient. 
+Unlike Phoenix, for applications without reduce function, 
+\myds does not start the reduce phase and directly starts the merge phase after the map phase.
+
 %做法，作用，我们的优化，不需要进行reduce和merge的阶段，应当尽量避免，以降低时间的开销
 
 \subsection{Pipelined execution}
@@ -254,5 +264,4 @@ In Section\ref{} we will present the design of Channel.
 
 
 \input buffer
-
 
