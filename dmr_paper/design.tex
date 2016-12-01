@@ -117,6 +117,13 @@ which can cause contention on the lock.
 the scalability will be bad.
 }
 
+Our goal is to make page faults scale to 
+large numbers of cores.
+This requires addressing a basic problem,
+How allow page faults to run concurrently to eliminate on the per-process read/write lock.
+This is difficult because of complicates sharing.
+
+To achieve our goal, this paper persents a new concurrent address space design that eliminates the above sources of contention by applying a new program model and by introducing channel, a way to share data between threads.
 We aim at providing an race-free programming abstraction 
 to support scalable MapReduce.
 %We aim at providing an easy-to-use programming abstraction 
@@ -157,8 +164,13 @@ Figure\ref{fig:api:thread} lists main function of managing threads and channels 
 Initialize in \myds, the master threads invoke 
 \codet{thread\_alloc} to create map workers and reduce workers
 , and invoke \codet{chan\_alloc} to alloc channels for them.
-Map worker as a sender to send message(calling \codet{chan\_setprod}),
-and reduce worker as a receiver to receive message(calling \codet{chan\_recv}).
+In \myds map and reduce are implemented using a producer-consumer model.
+The map threads and reduce threads are
+the producers and consumers, respectively
+(Section 4).
+
+Map worker, producing key-value, send message(calling \codet{chan\_setprod}),
+and reduce worker as a consumer to receive message(calling \codet{chan\_recv}).
 After creating channels and setting up send-receive relationship,
 both map and reduce workers start work by invoking \codet{thread\_start}.
 When the local buffer is full, 
@@ -175,7 +187,9 @@ The extra overhead focus on initialization(section 5).
 
 
 
+
 \subsection{Design of the Channel}
+
 %channel的底层实现，以及它无限制的映射机制，想说明的问题是：不需要等待，且没有过多的malloc和free操作带来的开销。
 Once the channel relationships are set up, 
 map workers can invoke \codet{chan\_send} to send messages to channel,
@@ -190,19 +204,15 @@ Unboundedness goal is the key to achieve high throughput.
 In order to reach a unbounded buffer,
 We design an extend machanism 
 which allows remap channel’s buffer to a new page frames.
-To record the produce-consume dependence and 
-trace generations of page frames among the sharing parties, 
-a special anchor extension page is introduced and shared between producer and consumers.
+To record and trace generations of page frames among the sharing parties, 
+a special anchor extension page is introduced and shared between producer thread and consumers consumer.
 Initially a sequence of pages in channel buffer 
 are mapped to a \codet{anchor} page table (Anchor in Figure
 \ref{fig:spmckern:extend}), 
 in which each page has a corresponding page table entry (PTE).
 Upon a producer page fault, the fault handler will allocate a real page frame and update the faulting page with a
 writable producer mapping so that the producer can write the
-page afterwards.When a consumer attempts to read a page
-with invalid mapping, the fault handler will check whether
-the target page frame is present and further fixed or not:
- 
+page afterwards.
 When a thread want to send without waiting, 
 it can call extend primitive to remap channel buffer to new page frames,
 without changing the old page 
@@ -211,7 +221,7 @@ After a consumer receive the old page from the channel,
 it can call extend to find the new page frames sended by the
 producer.
 The older page frames decrease their reference counts and
-are freed automatically when the counts reach zero
+are freed automatically when the counts reach zero.
 
 
 \begin{figure}[!h!t]  

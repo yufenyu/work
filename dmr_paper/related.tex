@@ -20,4 +20,6 @@ and can schedule tasks dynamically to support itrative applications.
 Phoenix need barrier between iterative MapReduce,
 while \myds brokes barrier to speed up computing.
 
-
+%虽然我们没有与mites, Tilt-MapReduce进行对比，但通过我们的研究，只要这些库使用pthread进行编程，那么就会存在scalability较差的问题。
+Although, we don't compare \myds with mites, Tilt-MapReduce,
+our research shows that if the MapReduce library implemented by Pthreads, there will be problem of scalability.
