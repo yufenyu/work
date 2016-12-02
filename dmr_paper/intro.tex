@@ -7,36 +7,39 @@
 
 %目前的现状，需求
 As the prevalence of multicore chips,
-it is foreseeable
-that tens to hundreds (even thousands) of cores on a single chip
+it is foreseeable that tens to hundreds (even thousands) of cores on a single chip
 will appear in the near future\cite{Borkar2007core}.
 While utilizing multicore sources is still challenging
 because of the difficulties of parallel programming.
-%另一方面，现在流行的分布式环境
-Parallel programming is becoming more and more popular
-because of its potential to improve performance, especially in
-multicore architectures. In the past, computer software has
-been written using serial computation concepts which is
-usually less efficient than multithreaded parallel computation.
+Specifically, the thread-based model requires the programmer to manually
+manage synchronization, load balancing, and locality, which is
+often error-prone (e.g., races and deadlocks) or requires detailed
+understanding of the underlying hardware.
+An alternative approach is to rely on a runtime system for
+concurrency management. 
 
-%引起mapreduce编程模型和Phoenix
-MapReduce\cite{dean2004mapreduce} 
-is a promising programming model for clusters
+MapReduce\cite{dean2004mapreduce}, 
+for instance, is a promising programming model for clusters
 to perform large-scale data processing
 in a simple and effecient way.
-In most cases, programmers only need to implement two interfaces:
-Map, which processes the input data and converts it into a 
-number of key-value pairs; 
-and Reduce, which aggregates values in the
-key-value pairs according to the key.
+In most cases, programmers only need to implement two functions:
+map and reduce.
+The runtime system spawns multiple threads that apply
+these functions concurrently across the elements of the input
+dataset. 
+%The runtime spawns multiple threads to worker and 
+%automatically manages synchronization, load balancing, 
+%and locality in order to achieve efficient execution.
+%which aggregates values in the key-value pairs according to the key.
 And the programmer dose no need to control synchronization 
 and schedule tasks manually.
+%面向多核的MapReduce的相关工作
 While initially MapReduce is implemented on clusters, Ranger
 et al. have demonstrated the feasibility of running MapReduce
 applications on shared memory multicore machines with 
 Phoenix\cite{ranger2007phoenix}.
 Other libraries such as Metis\cite{mao2010metis} 
-and Tiled-mapreduce\cite{chen2010tiled},
+, Tiled-mapreduce\cite{chen2010tiled} and MRPhi\cite{lu2013mrphi}, 
 also show that MapReduce is a promising programming model 
 for multicore platforms to take full advantage of  
 processing resources.
@@ -45,30 +48,41 @@ among CPU cores and relies on
 shared memory to handle inter-task communications.
 
 %Phoenix存在的问题，scalability较差的原因
-Ideally, adding more processes and cores to the library
+This work focuses on improving Phoenix\cite{ranger2007phoenix}'s scalability and performance.
+On the one hand, 
+While the original Phoenix performed well on small-scale systems,
+we found that the runtime significantly underperformed on large-scale systems with multicores.
+Specially, the performance will be better 
+when the number of cores increases from 1 to 4, 
+while the performance will be worse if using more than 4 cores. 
+On the other hand,
+there is a strict barrier between the Map and the
+Reduce phase, which is bad for pipeline and hardware resource utilization.
+
+
+Ideally, adding more threads and cores to the runtime
 would bring about a linear decrease in execution time.
 However, the benefits of adding more
 cores will be reduced due to overhead associated with the
-additional processes--the contention of lock.
-A common parallel programming model is shared-memory multithreading, 
+additional threads----the contention of lock.
+Due to parallel programming model is shared-memory multithreading, 
 where all threads of an application share a single address space. 
+%A common parallel programming model is shared-memory multithreading, 
+%where all threads of an application share a single address space. 
 This shared address space has a
-cost, can limit the scalability of these applications. 
-All of these operations are synchronized by a single per-process lock. 
-As a result, the performance will be better 
-when the number of cores increases from 1 to 4, 
-while the performance will be worse if using more than 4 cores.  
+cost, which will limit the scalability of these applications. 
+%All of these operations are synchronized by a single per-process lock. 
 Hence, with the continuously increasing
 number of cores, it can easily cause resource pressures on the
-runtime, operating systems and the CPU caches, which could sig-
-nificantly degrade the performance. 
+runtime, operating systems and the CPU caches, 
+which could significantly degrade the performance. 
 
 %Compared to the cluster version, MapReduce on multicore is able to take ad-
 %vantage of fast inter-task communications in shared memory, thus
 %avoids the expensive network communications among tasks.
 
 %我们如何解决这个问题
-
+%为了改进Phoenix存在的这些问题，我们提出了一个scalable mapreduce库，它即具有较好的性能，且具有较好的scalability.
 To remedy the above problems, 
 firstly, we propose a Scalable thread libray(\myth).
 Then this paper presents a modified model of \myds(Scalable MapReduce), 

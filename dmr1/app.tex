@@ -1,0 +1,33 @@
+\subsection{benchmarks}
+应用程序的特点如图\ref{appArgs}
+\begin{itemize}
+\item{AppName:应用程序的名称}
+\item{Dataset:输入数据集}
+\item{Total key/value Pair Num:给定的数据集总共会产生的键值对的数目}
+\item{Total Key Num:给定的数据集中总共会产生key不同的键值对的数目}
+\end{itemize}
+\begin{table}[!h]
+\begin{footnotesize}
+\caption{应用程序信息}
+\begin{tabularx}{1.22\textwidth}{|c|c|c|c|}
+\hline
+\textbf{AppName} & \textbf{Dataset} &\textbf{Total key/value Pair Num} &\textbf{Total Key Num}\\
+\hline
+word\_count(WC) & 100MB & 17941890 & 123748\\  
+\hline
+histogram(Hist) & 1.4GB &  761903& 692\\ 
+\hline
+linear regression(LR) & 500MB & 2590& 5\\ 
+\hline
+pca(PCA) & 4000*4000 & 8002000& 8002000\\ 
+\hline
+matrix multiply(MM) & 2000*2000 & 0& 0\\ 
+\hline
+kmeans(KM) & -d 3 -c 1000 -p 100000 -s 1000& 340300000 & 1000\\ 
+\hline
+string match(SM) & 500MB & 0& 0\\ 
+\hline
+\end{tabularx}
+\label{appArgs}
+\end{footnotesize}
+\end{table}
