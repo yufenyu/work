@@ -100,11 +100,13 @@ the barrier is bad for the overall hardware resource utilization.
 Second, in cluster environments, 
 the map tasks and reduce tasks are usually 
 executed in different machines and data exchange among
-tasks are done through networking, 
-compared to shared memory in multicore environments. 
-Hence, shared data structures , 
-instead of networking communications, 
-are the major performance bottlenecks processing large MapReduce jobs on multicore.
+tasks are done through networking.
+Compared to the cluster version, the most striking aspect of
+Phoenix is that the workers communicate by accessing a shared
+address space.
+Because the threads contend over the single address space,
+this can be a limitation in a large-scale parallel system.
+Hence this is the major performance bottlenecks processing large MapReduce jobs on multicore.
 Multithreaded programs with hybrid shared mutable
 data structures do not scale on multicore.
 They suffer from serious lock contention.
@@ -115,6 +117,19 @@ Because of complex invariants in virtual memory systems,
 widely used in Linux kernels, 
 have a single lock per shared address space. 
 \cite{clements2013radixvm}
+
+Figure \ref{fig:phoenix:speedup} shows the scalability of the Phoenix runtime
+measured on 32-cores system with the released applications. 
+Despite the parallelism available in these applications, 
+none of them scales beyond 64 threads, 
+and most of them actually slow down when
+more threads are involved. 
+This is the result of contend over the single address space. 
+We explain these issues
+in detail in Section 3.
+
+
+
 
 
 \bluet{Phoenix do not achieve the desired scalability with increasing core count 

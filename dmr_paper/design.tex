@@ -4,6 +4,8 @@
 Then we present a new thread model, which has good scalability.
 }
 
+
+
 \subsection{Scalability of Phoenix}
 In Phoenix, programs are often written to start as many threads as the system has cores,
 As indicated by figure\ref{fig:phoenix:speedup}, 
@@ -47,6 +49,23 @@ Actually, it caused by linux kernel.}
 %bottlenecks.
 %}
 
+The mmap() system call is used to read in input data. 
+Once the user passes the pointer to the mmap()ed region as a runtime input, 
+multiple threads will concurrently cause page-fault in the input data
+while invoking their map functions.
+Call-graph information and source code analysis show that 
+\_\_ticket\_spin\_lock is caused by pagefault.
+When a large multi-threaded computing job 
+that causes a lot of parallel page-faults, 
+these page-faults will all run into contention on the mm\_sem semaphores.
+Semaphores are sleeping locks 
+and may run into convoying problems 
+where waiting threads may 
+get stuck at the end of the wait queue for a long time.\cite{Andi2009lmulticore}
+Thus, spin lock 
+contention degrades the parallel scalability performance of 
+the benchmark. 
+
 Data structure private locks can be a problem 
 if the data structure is shared by multiple threads. 
 A standard example here are the mm\_sem read-write semaphore 
@@ -62,18 +81,7 @@ which can cause contention on these locks.
 %and source code analysis show that the two functions are
 %called when adding a virtual memory address range into the
 %process address space or deleting a virtual memory address range. 
-Call-graph information and source code analysis show that 
-\_\_ticket\_spin\_lock is caused by pagefault.
-When a large multi-threaded computing job 
-that causes a lot of parallel page-faults, 
-these page-faults will all run into contention on the mm\_sem semaphores.
-Semaphores are sleeping locks 
-and may run into convoying problems 
-where waiting threads may 
-get stuck at the end of the wait queue for a long time.\cite{Andi2009lmulticore}
-Thus, spin lock 
-contention degrades the parallel scalability performance of 
-the benchmark. 
+
 
 One reason that widely used operating systems 
 use a lock on the address space is 

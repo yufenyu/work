@@ -58,8 +58,13 @@ while the performance will be worse if using more than 4 cores.
 On the other hand,
 there is a strict barrier between the Map and the
 Reduce phase, which is bad for pipeline and hardware resource utilization.
+To achieve scalable performance while retaining
+the simplicity of the runtime-based approach, 
+it becomes crucial to address these issues.
 
-
+In contrast, Phoenix is a shared-memory version of
+MapReduce targeted for multi-core and multiprocessor systems.
+Phoenix uses shared-memory threads to implement parallelism
 Ideally, adding more threads and cores to the runtime
 would bring about a linear decrease in execution time.
 However, the benefits of adding more
@@ -90,7 +95,15 @@ that can efficently support MapReduce applications.
 \myds reserves the similar Phoenix programing interfaces as well.
 Specifically, this paper make the following contributions:(\redt{need talk more....})
 \begin{itemize}
-  \item We research the reason for bad scalability of Phoenix.
+  \item We identify the important roadblocks 
+  that limit scaling of the Phoenix runtime on shared-memory systems. 
+  Specifically, we find that shared address space
+   becomes a crucial issue at large thread counts.
+
+  \item We demonstrate the approach with the \myds runtime using a 32-cores system. The optimized runtime exhibits significantly improved scalability over the
+original system; For 32cores, the new runtime improves speedup by **× 
+(maximum improvement of speedup up to **×).
+
   \item We aim at providing an race-free programming abstraction to
 support scalable MapReduce.
   \item We present a scalable MapReduce.
@@ -114,4 +127,3 @@ Related and future work are covered in Sections 6 and 7.
 %Section 4 presents the experimental setup. Section 5 discusses
 %the results in terms of execution time and total power
 %consumption. Finally, Section 6 concludes the paper.
-
