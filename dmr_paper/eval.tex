@@ -20,11 +20,11 @@ and thus each result is the average of the remaining 8 runs.
 \begin{figure*}[htpb]
 \centering
   \subfigure[]{
-   \includegraphics[width=0.4\textwidth]{eps/dmr_time_array.eps}
+   \includegraphics[width=0.45\textwidth]{eps/dmr_time_array.eps}
    \label{fig:dmr:time:ptmalloc}
   }
   \subfigure[]{
-   \includegraphics[width=0.4\textwidth]{eps/dmr_time_jemalloc.eps}
+   \includegraphics[width=0.45\textwidth]{eps/dmr_time_jemalloc.eps}
    \label{fig:dmr:time:jemalloc}
   }
   \caption{Execution time of SMR versus Phoenix}
@@ -41,11 +41,18 @@ We discuss their bottlenecks in detail in Section 5,
 but in the remainder of this section 
 we first focus on the optimizations that turned out to be successful.
 }
+We experimented with various allocators.
 Since there are many heap objects shared among threads
-in Phoenix, and ptmalloc\cite{gloger1997ptmalloc}, 
+in Phoenix, and it is sensitive to memory allocator.
+Compared to the libc sequential allocator ,  
+ptmalloc\cite{gloger1997ptmalloc},
+jemalloc{evans2006jemalloc} provided improved performance. 
 the memory allocator in glibc, does not scale on multicore system. 
-Then we evaluation Phoenix built with jemalloc\cite{evans2006jemalloc}, 
-a scalable memory allocator for multicore system.
+Therefore we evaluate the Phoenix with jemalloc and
+compare it  with \myds(Figure \label{fig:dmr:time:jemalloc}).
+Phoenix-jemalloc speedup Firgure \ref{fig:phoenix:speedup:jemalloc}
+
+However, nether allocator could successfully scaled up to 32cores.
 
 Figure\ref{fig:dmr:time:ptmalloc} and \ref{fig:dmr:time:jemalloc}
 present the Execution time of \myds versus Phoenix.
@@ -168,10 +175,12 @@ supercomputer node.
 \begin{figure}[htpb]
 \centering
   \subfigure[]{
-   \includegraphics[width=0.25\textwidth]{eps/dmr_init_time.eps}
-   \label{fig:dmr:time:ptmalloc}
-   \includegraphics[width=0.25\textwidth]{eps/phoenix_init_time.eps}
-   \label{fig:dmr:time:jemalloc}
+   \includegraphics[width=0.45\textwidth]{eps/dmr_hist_init.eps}
+   \label{fig:dmr:hist:init}
+   }
+  \subfigure[]{
+   \includegraphics[width=0.45\textwidth]{eps/phoenix_init_time.eps}
+   \label{fig:dmr:lr:init}
   }
   \caption{Initialize time of SMR and Phoenix}
    \label{fig:init}
@@ -180,6 +189,21 @@ Figure\ref{fig:init} shows the initialization time of \myds and Phoenix.
 The time of \myds used is range 0.25s to  0.35s, 
 while it is just about 0.001s in Phoenix.
 {\color{red} why the initialization time is so large in \myds}
+
+Although we were able to significantly improve the scalability of \myds, 
+workloads histogram, linear regression still did not scale up to 32cores. 
+%We used /usr/bin/time to assess where the execution time was
+We used stub to assess where the execution time was
+being spent. 
+Figure \ref{fig:dmr:hist:init} shows the result with exec time
+defined as mapreduce actual execution time and init time as the initialization time before workers starting work. 
+It was clear that the 2 non-scaling workloads shared two common trends. 
+First, the init time ratio increased with increasing number of threads, 
+dominating the total execution time at high thread count. 
+%Second, the portion of actual computation time assumed by kernel code (sys /
+%effective) significantly increased as we went beyond the single
+%chip boundary.
+%Second, both total execution time are short, While the portion of init time is 
 
 \begin{figure}[htpb]
 \centering
@@ -190,3 +214,10 @@ while it is just about 0.001s in Phoenix.
   \caption{Initialize time of SMR and Phoenix}
    \label{fig:time}
 \end{figure}
+
+\redt{\myds initialization time is uesd to create threads, channel.}
+%\myds的大部分时间用于了thread的创建，channel的分配，因此它的开销远大于Phoenix初始化的开销
+
+
+
+
