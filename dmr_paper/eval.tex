@@ -19,11 +19,11 @@ and thus each result is the average of the remaining 8 runs.
 
 \begin{figure*}[htpb]
 \centering
-  \subfigure[]{
+  \subfigure[SMR versus Phoenix with ptmalloc]{
    \includegraphics[width=0.45\textwidth]{eps/dmr_time_array.eps}
    \label{fig:dmr:time:ptmalloc}
   }
-  \subfigure[]{
+  \subfigure[SMR versus Phoenix with jemalloc]{
    \includegraphics[width=0.45\textwidth]{eps/dmr_time_jemalloc.eps}
    \label{fig:dmr:time:jemalloc}
   }
@@ -174,15 +174,15 @@ supercomputer node.
 \subsection{ Challenges and Limitations}
 \begin{figure}[htpb]
 \centering
-  \subfigure[]{
+  \subfigure[Execution time and initialization time on histgram]{
    \includegraphics[width=0.45\textwidth]{eps/dmr_hist_init.eps}
    \label{fig:dmr:hist:init}
    }
-  \subfigure[]{
-   \includegraphics[width=0.45\textwidth]{eps/phoenix_init_time.eps}
+  \subfigure[Execution time and initialization time on linear\_regression]{
+   \includegraphics[width=0.45\textwidth]{eps/dmr_lr_init.eps}
    \label{fig:dmr:lr:init}
   }
-  \caption{Initialize time of SMR and Phoenix}
+  \caption{Initialize time with \myds}
    \label{fig:init}
 \end{figure}
 Figure\ref{fig:init} shows the initialization time of \myds and Phoenix.

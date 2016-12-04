@@ -36,20 +36,19 @@ Phoenix is an implementation of MapReduce for multicore  and multiprocessor syst
 It shows MapReduce is a promising model  and applications written with MapReduce model
 have competitive scalability and performance in comparison to those
 written with Pthreads\cite{ranger2007phoenix};
-
 Phoenix stores the intermediate key-value pairs produced 
-by the Map phase calls in a global matrix (Figure \ref{fig:phoenix:intermediate}). 
+by the map workers in a global matrix (Figure \ref{fig:phoenix:intermediate}). 
 Each map and reduce workers can write or read this global matrix. 
-Concurrent map workers can touch the same area without synchronous controls.
-When map and reduce workers operate the buffer concurrently, 
-two  strategies must be carried out to avoid lock and cache contention costs,
+%Concurrent map workers can touch the same area without synchronous controls.
+When map and reduce workers operate the matrix concurrently,
+two strategies must be carried out to avoid lock contention costs.
 \begin{itemize}
 	\item Each row of the matrix is exclusively used by a map worker, 
-and each column of the matrix is exclusively used by a reduce worker. 
-	\item There is a barrier between Map and Reduce phase.
-After all map workers have been completed, the reduce workers begin to compute. 
+	and each column of the matrix is exclusively used by a reduce worker. 
+	\item There is a barrier between the Map and Reduce phase. 
+	After all map workers have been completed, 
+	the reduce workers begin to compute. 
 \end{itemize}
-
 
 \begin{figure}[!h!t]  
     \centering
@@ -57,33 +56,7 @@ After all map workers have been completed, the reduce workers begin to compute.
     \caption{Phoenix intermediate struct}
     \label{fig:phoenix:intermediate}
 \end{figure}
-%as depicted in
-As shown in this figure \ref{fig:phoenix:speedup}, 
-%when using no more than eight cores, the Phoenix scales well on hist ... ;
-%when using no more than 16 cores, the Phoenix scales well on sm and le.
-the Phoenix scales well on histgram (hist), wordcount (wc) and pca when the number of core is less than 8.
-As for the linear\_regression (lr) and string\_match (sm), 
-Phoenix performs well with no more than 16 cores.
-However, when core number is more than  8, 
-the speedup of Phoenix  on hist,  wc and pca is degraded.
-For lr and sm, the speedup is degraded when cores is greater than 16.
-%For linear\_regression (lr) and string\_match (sm),  using 16 or more  cores leads to speedup degradation.
 
-%The scalability of Phoenix is limited, the performance will be
-%better when the number of cores increases from 1 to 4, 
-%while the performance will be worse if using more than 4 cores. 
-%Perf\cite{}.\redt{need to talk more about the results...}
-
-
-\begin{figure}[!h!t]  
-    \centering
-    \includegraphics[width=0.45\textwidth]{eps/phoenix_speedup.eps}
-    \caption{speedup of Phoenix}
-    \label{fig:phoenix:speedup}
-\end{figure}
-
-
-\subsection{Optimizing Opportunities of Phoenix}
 %Though Phoenix has successfully demonstrated the feasibility
 Though Phoenix has demonstrated promising feasibility when running  applications on multicore,  it has limitations in terms of scalability and performance due to its manners of design and implementation.
 The detail analyses are described as follows:
@@ -112,6 +85,30 @@ multithreading \cite{clements2013radixvm}.
 
 %多核环境下，限制mapreduce性能的关键因素是多线程共享的数据结构。phoenix是基于共享内存的Pthreads多线程编写的，其中每个线程没有自己独立的地址空间，它们需要共享进程的地址空间，在linux中，每个进程地址空间有一个锁对应，当多个线程需要共享时，便会对这个lock竞争，这种现象对于基于共享内存的多线程并行编程非常普片。
 
+\begin{figure}[!h!t]  
+	\centering
+	\includegraphics[width=0.45\textwidth]{eps/phoenix_speedup.eps}
+	\caption{speedup of Phoenix}
+	\label{fig:phoenix:speedup}
+\end{figure}
+
+%as depicted in
+As shown in this figure \ref{fig:phoenix:speedup}, 
+%when using no more than eight cores, the Phoenix scales well on hist ... ;
+%when using no more than 16 cores, the Phoenix scales well on sm and le.
+the Phoenix scales well on histgram (hist), wordcount (wc) and pca when the number of core is less than 8.
+As for the linear\_regression (lr) and string\_match (sm), 
+Phoenix performs well with no more than 16 cores.
+However, when core number is more than  8, 
+the speedup of Phoenix  on hist,  wc and pca is degraded.
+For lr and sm, the speedup is degraded when cores is greater than 16.
+%For linear\_regression (lr) and string\_match (sm),  using 16 or more  cores leads to speedup degradation.
+
+%The scalability of Phoenix is limited, the performance will be
+%better when the number of cores increases from 1 to 4, 
+%while the performance will be worse if using more than 4 cores. 
+%Perf\cite{}.\redt{need to talk more about the results...}
+
 In conclusion, Phoenix can not achieve desired scalability with increasing core count because of the strict barrier and contented lock.
 To aviod the aforementioned issues, a novel MapReduce model, \myds,  is proposed in this paper,
 %employ/exploit/utilize/use
@@ -120,6 +117,9 @@ and adopts a new thread program model to reduce lock contending.
 The implementation details of \myds are presented in Section 3 and Section 4, respectively.  
 
 
+
+
+%\subsection{Optimizing Opportunities of Phoenix}
 
 %为了避免上述提到的问题，我们希望我们新设计的系统，拥有以下两个特性(1)break barrier (2)，提升scalability
 

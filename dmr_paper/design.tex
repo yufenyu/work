@@ -1,5 +1,5 @@
-\section{Design of thread model}
-%这一部分，我们首先分析Phoenix较差scalability的根本原因，然后针对Phoenix scalability存在的challenge，我们提出可行的解决方案，即构造一种具有较好scalability的thread model。具体的实验部分将在section6做详细的解释
+\section{Design of thread program model}
+%这一部分，首先，我们将详细分析Phoenix较差scalability的根本原因，然后针对Phoenix scalability存在的challenge，我们提出可行的解决方案，即构造一种具有较好scalability的thread model。然后详细解释这种新的线程模型的详细设计方案，最后具体的实验部分在section 6
 {\color{red}In this section, we will search the main factor of Phoenix's bad scalability.
 Then we present a new thread model, which has good scalability.
 }
@@ -7,6 +7,7 @@ Then we present a new thread model, which has good scalability.
 
 
 \subsection{Scalability of Phoenix}
+%描述Phoenix 的 pool scalability
 In Phoenix, programs are often written to start as many threads as the system has cores,
 As indicated by figure\ref{fig:phoenix:speedup}, 
 when the system is larger than their scalability limit 
@@ -16,20 +17,20 @@ when there are more cores in the system.
 The trend of this curve suggests that
 the parallel scalability of Phoenix is poor.
 
+%使用perf来收集热点函数的执行时间，实验结果显示，在32核情况下，(这里可以给出一个图，16和32核下的热点函数分别是什么，占用多少的百分比分别又是多少？)
 In order to understand the scalability behavior, 
 Perf\cite{} is exploited to collect execution time information
 on the function basis. 
-Experimental results show that Phoenix suffer from serious lock contention
-when the core count exceeds 8.
 Figure\ref{fig:phoenix:spinlock} shows the percent of \_\_ticket\_spin\_lock of each benchmark.
 Histgram on 16cores and 32 cores
 show that \_\_ticket\_spin\_lock is one function 
 which have largest execution time with 71.25\% and 40.15\% respectively. 
-\bluet{That means Phoenix waster most of time to wait but not actual work.
+Experimental results show that Phoenix suffer from serious lock contention
+when the core count exceeds 8.
+That means Phoenix waster most of time to wait but not actual work.
 And it can't fully use mulitcores resource.
-From Seciton2.2 we know, Phoenix takes two strategies to avoid multiple threads operate the global buffer concurrently.
-Why the benchmarks suffer from serious lock contention?
-Actually, it caused by linux kernel.}
+In fact, Phoenix takes two strategies to avoid multiple threads operate the global matrix concurrently.
+The spinlock is caused by linux kernel.
 \begin{figure}[!h!t]  
     \centering
     \includegraphics[width=0.35\textwidth]{eps/phoenix_spinlock.eps}
