@@ -4,6 +4,7 @@
 并详细解释这种新的线程模型的详细设计方案，
 最后通过实验证明它的scalability.
 
+\subsection{新的线程模型}
 \subsubsection{Phoenix较差scalability的分析}
 Phoenix中启动的map或reduce线程数与系统的核数相同，
 从Phoenix的speedup图(\ref{})中，我们可以看出，
@@ -15,71 +16,124 @@ speedup的曲线证明了Phoenix的scalability非常差。
 为了深入探究较差scalability的根本原因，
 我们利用Linux perf工具来收集程序的热点函数信息（主要看热点函数占用总运行时间的百分比），
 通过热点函数的分析，查看高核情况下，占用时间最多的运行函数，
-如表\ref{}，显示各应用程序，分别在16和32核情况下，占用时间最多的函数。
-从图中可以看出，ticket\_spin\_lock的开销非常大，
-随着核数的增多ticket\_spin\_lock的占用的开销越来越大，
+如表\ref{}显示，在16和32核情况下，各个应用程序中占用时间最多的函数。
+从表中可以看出，对一hist, lr, wc, sw，在32核情况下ticket\_spin\_lock的开销非常大，
+针对ticket\_spin\_lock，我们测试各应用程序的占用情况，如图\ref{}所示，
+从图中可以看出，
+随着核数的增多，各应用程序中的ticket\_spin\_lock的占用的开销越来越大，
 特别地，在16核和32核情况下，
 histgram中ticket\_spin\_lock占用的开销最大，分别为71.25\%和40.15\%.
-从实验结果可知，16核以上，hist, lr, wc, sm的运行时间主要用于锁的竞争和等待，
+这表明，16核以上，hist, lr, wc, sm的运行时间主要用于锁的竞争和等待，
 而没有做实际的计算。
 并且随着核数的增多，这种竞争越激烈，导致Phoenix的scalability较差。
 事实上，从前面对Phoenix的分析我们知道，
-Phoenix在实现中采取了划分和barrier，以避免多个map和reduce对同一个matrix竞争。
-为何Phoenix中会有这么多的锁的竞争呢？
-ticket\_spin\_lock来源于多个线程对操作系统中共享数据结构的竞争。
-
+Phoenix中采取了划分和barrier两种策略，以避免多个map和reduce对同一个matrix竞争，
+然而实验的结果却显示在8核以上，依然有很激烈的竞争。
 函数的调用图显示，ticket\_spin\_lock几乎全部是由pagefault引起的。
-应用程序通过mmap系统调用来读取输入数据，
-当map worker调用map函数处理输入函数时，会产生pagefault，为mmap的数据分配物理页.
-map worker是一个线程，它没有自己独立的地址空间，
-需要共享主进程的地址空间，即在内核中需要共享进程的mm\_struct结构。
-Linux内核中mm\_struct结构对应一个读写信号量mmap\_sem，
-任意需要访问该mm\_struct结构的线程，
-首先需要获得mmap\_sem信号量，才能能够读写虚拟地址空间。
+
+
 为了保证进程能够在O(lgn)的时间读写查找mmap的内存区域，
 linux采用一个红黑树来组织多个mmap区域，
 当一个新的区域插入，或者删除一个不用的区域时，
-需要重现调整红黑树的结构，已保证红黑树的特性，
-Linux中，这个红黑树结构是通过一个lock来保护的。
-当多个线程都需要读写和修改该红黑树时，便需要竞争lock.
+需要重现调整红黑树的结构，以保证红黑树的特性，
+为了保证一致性和正确性，整个红黑树结构通过一个lock来保护的。
+进程地址管理结构mm\_struct中，有一个mmap\_sem信号量，
+任意需要访问和修改mmap区域的线程或进程，
+首先需要获得mmap\_sem信号量，才能能够读写虚拟地址空间。
+由于线程没有自己的地址空间，需要共享进程地址空间，
+因此当多个线程都需要读写内存区域时，便会竞争mmap\_sem.
 
+Phoenix的应用程序通过mmap系统调用来读取输入数据，
+当map worker调用map函数处理输入函数时，会产生大量的pagefault.
+pagefault内核路径中，首先需要获取mm\_sem信号量，
+然后才能修改mmap区域。
 因此当多个map worker同时产生pagefault时，
 多个编程便会竞争mmap\_sem，这个信号量是一个睡眠锁，
 如果信号量不能满足，它便进入对应的等待队列中睡眠等待，
 竞争的线程越多，等待的时间便越长，
 从而浪费多核资源，造成整个多核系统的性能下降。
+%综上所述，Phoenix中采取一定的策略避免多线程对共享数据的竞争，
+%然而，多个线程对操作系统中共享数据结构的竞争导致较高的spinlock开销，
+%如果直接采用进程，可以避免Phoenix对内核中mm\_sem信号量的竞争，
+%但进程之间的数据共享不容易，为此，我们设计了一种新的线程模型Sthread(Scalable thread)，
+%接下来将详细介绍它的设计与实现.
+
+%必须结合应用程序的特点来说明问题：
+%\redt{是什么导致speedup下降（pagefault），为什么hist, wc, sm的pagefault会比较多，为什么pca, sm的pagefault会比较少？}
+%我们能够做的改进是不是只对那种pagefault比较读的应用程序有效果呢？
+
+\subsubsection{可伸缩的线程模型}
+Phoenix中采取一定的策略避免多线程对共享数据的竞争，
+然而在高核情况下，由于内核中的pagefault的可扩展性较差，
+导致激烈的锁的竞争。
+为了让pagefault具有更好的可伸缩性，
+可以采用一些方式如\cite{}...。
+但是，我们不想改变操作系统的内部实现，
+我们仅仅希望设计一个简单的可伸缩的线程模型，
+以支持mapreduce处理。
+事实上，如果使用进程来实现map worker或reduce worker，
+便可以可以避免多个线程对共享地址空间的读写信号量的竞争。
+但进程之间数据的共享却是一个比较复杂的问题。
+
+为此，我们设计了一个新的scalable线程模型\myth,
+它基于C库实现。与传统的Pthread线程不同，
+\myth线程都用有自己独立的地址空间（即在内核中拥有一个私有的mm\_struct结构），
+而不需要与其他的线程共享地址空间，从而可以有效避免mmap\_sem读写信号量的等待。
+另一方面，我们知道基于共享地址空间的多个线程间，可以直接与其他的线程通信，
+一旦线程地址空间隔离，通信将变的不那么容易。
+为此，\myth为线程提供了一个channel，即线程之间可以共享channel，用于数据的共享，
+从而避免地址空间隔离导致的数据共享不便。
+
+表\ref{}展示了\myth用于管理线程和通道的主要接口。
+初始化情况下，主线程调用\codet{thread\_alloc}分配map和reduce线程，
+并且调用\codet{chan\_alloc}为每对map worker和reduce worker创建channel，
+用于map和reduce之间的通信。
+之后，主线程便可以调用\codet{thread\_start}启动线程。
+\myds中，所有的channel都有一个producer 和 consumer，
+构成了一个producer-consumer模型。
+master调用\codet{chan\_setprod}和\codet{chan\_setcons}
+分别将map worker设置成producer和reduce worker设置成consumer(将在下一章详细解释).
+
+相比传统的Pthread模型，\myth可以减少多线程对内核数据结构的竞争，
+但\myth线程的创建，channel的分配和设置，都为系统带来了额外的开销，
+我们将在第五章详细测试并分析这些额外的开销。
 
 
+\subsubsection{无边界的channel}
+一旦设置好channel的生产者和消费者关系后，
+producer便可以调用\codet{chan\_send}将消息发送到channel,
+consumer通过调用\codet{chan\_recv}从channel中接受数据。
+通常情况下，当channel的通信buffer时，producer需要等待，
+直到channel中的数据被consumer取走，
+但这种停止等待限制了系统的性能。
+为此，我们设计了一个无边界的channel，
+即当channel的buffer满时，producer无需等待，可以继续向channel中发送数据。
+为了实现无边界的channel，我们设计了一个扩展机制，
+它允许将channel buffer区域重新映射到一块新的物理地址
+channel底层实现中，以页为单位将数据发送出去。
 
 
-必须结合应用程序的特点来说明问题：
-\redt{是什么导致speedup下降（pagefault），为什么hist, wc, sm的pagefault会比较多，为什么pca, sm的pagefault会比较少？}
-我们能够做的改进是不是只对那种pagefault比较读的应用程序有效果呢？
+初始情况下，整个CHAN区域(默认情况下为512K)会被映射到一个anchor物理页，
+对应的ptab中都记录anchor的地址，
+producer以页为单位发送数据，
+当producer需要发送数据时，会产生一个pagefault，
+操作系统分配一个物理page，并将其记录在anchor和ptab对应的pte中，
+之后producer便将数据copy到该page中，发送完成。
+consumer接受数据时，更具读取的位置address，得到ptab中对应的pte，
+得到anchor中对应的anch\_pte，anch\_pte中记录了对应的物理page对应的位置，
+从中读取数据。
 
-\subsection{新的编程模型}
-基于produce-consume模型，以及隔离的地址空间的需求，
-我们不再使用pthread实现SMR，而是重新实现了一个线程模型。
-这个线程模型与传统的pthread线程不同：
-(1)其中每个线程都拥有自己独立的地址空间，
-线程之间相互隔离，不需要共享主进程的地址空间;
-(2)线程之间有一个共享的channel，
-用于线程间的通信。
-每个map worker和reduce worker就是这样一个线程，
-并且我们在初始化的时候，
-让每个map worker和reduce worker之间拥有一个共享的channel，
-用于传递map产生的中间结果。
-
-
-\subsubsection{线程模型}
-Linux操作系统中，使用一个lock来保护地址空间的目的是……
-
-为了避免produce-consumer模型如图
-每个map线程的地址空间中有
+当CHAN区域写满后，producer的CHAN会被映射到一个新的anchor2物理页，
+producer发送数据时，将重复上述过程。
+anchor1中有一个特殊的pte将两个anchor链接起来。
+如果此前发送的数据，consumer没有读取晚，Consumer可以继续通过anchor1找到对应的物理页读取，
+当读取完毕后，通过特殊的pte，继续读取anchor2指向的数据。
 
 
+事实上，channel buffer是\myth空间的一块虚拟地址空间我们成为CHAN(如图)，
 
 
-
+初始情况下，SPMC区域中的多个地址空间
 
 
 
@@ -151,6 +205,3 @@ DMR中我们采用内存映射和隐式queue的方式，
 进程的创建以及内存映射的环境构建，
 都在DMR的初始化部分完成。
 实验部分我们会详细分析DMR初始化的开销问题。
-
-\subsubsection{通道的特征}
-%无边界的通道
