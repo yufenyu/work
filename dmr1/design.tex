@@ -1,3 +1,61 @@
+\section{总体设计}
+这一部分，我们首先详细分析Phoenix较差scalability的根本原因，
+然后我们提出可行的解决方案，即构造一种具有较好scalability的thread model，
+并详细解释这种新的线程模型的详细设计方案，
+最后通过实验证明它的scalability.
+
+\subsubsection{Phoenix较差scalability的分析}
+Phoenix中启动的map或reduce线程数与系统的核数相同，
+从Phoenix的speedup图(\ref{})中，我们可以看出，
+当超过一定的限度，增加核数，
+并不能为Phoenix的应用程序带来scalability的提升，
+即随着核数的增多，处理应用程序所需要的时间就越长，
+speedup的曲线证明了Phoenix的scalability非常差。
+
+为了深入探究较差scalability的根本原因，
+我们利用Linux perf工具来收集程序的热点函数信息（主要看热点函数占用总运行时间的百分比），
+通过热点函数的分析，查看高核情况下，占用时间最多的运行函数，
+如表\ref{}，显示各应用程序，分别在16和32核情况下，占用时间最多的函数。
+从图中可以看出，ticket\_spin\_lock的开销非常大，
+随着核数的增多ticket\_spin\_lock的占用的开销越来越大，
+特别地，在16核和32核情况下，
+histgram中ticket\_spin\_lock占用的开销最大，分别为71.25\%和40.15\%.
+从实验结果可知，16核以上，hist, lr, wc, sm的运行时间主要用于锁的竞争和等待，
+而没有做实际的计算。
+并且随着核数的增多，这种竞争越激烈，导致Phoenix的scalability较差。
+事实上，从前面对Phoenix的分析我们知道，
+Phoenix在实现中采取了划分和barrier，以避免多个map和reduce对同一个matrix竞争。
+为何Phoenix中会有这么多的锁的竞争呢？
+ticket\_spin\_lock来源于多个线程对操作系统中共享数据结构的竞争。
+
+函数的调用图显示，ticket\_spin\_lock几乎全部是由pagefault引起的。
+应用程序通过mmap系统调用来读取输入数据，
+当map worker调用map函数处理输入函数时，会产生pagefault，为mmap的数据分配物理页.
+map worker是一个线程，它没有自己独立的地址空间，
+需要共享主进程的地址空间，即在内核中需要共享进程的mm\_struct结构。
+Linux内核中mm\_struct结构对应一个读写信号量mmap\_sem，
+任意需要访问该mm\_struct结构的线程，
+首先需要获得mmap\_sem信号量，才能能够读写虚拟地址空间。
+为了保证进程能够在O(lgn)的时间读写查找mmap的内存区域，
+linux采用一个红黑树来组织多个mmap区域，
+当一个新的区域插入，或者删除一个不用的区域时，
+需要重现调整红黑树的结构，已保证红黑树的特性，
+Linux中，这个红黑树结构是通过一个lock来保护的。
+当多个线程都需要读写和修改该红黑树时，便需要竞争lock.
+
+因此当多个map worker同时产生pagefault时，
+多个编程便会竞争mmap\_sem，这个信号量是一个睡眠锁，
+如果信号量不能满足，它便进入对应的等待队列中睡眠等待，
+竞争的线程越多，等待的时间便越长，
+从而浪费多核资源，造成整个多核系统的性能下降。
+
+
+
+
+必须结合应用程序的特点来说明问题：
+\redt{是什么导致speedup下降（pagefault），为什么hist, wc, sm的pagefault会比较多，为什么pca, sm的pagefault会比较少？}
+我们能够做的改进是不是只对那种pagefault比较读的应用程序有效果呢？
+
 \subsection{新的编程模型}
 基于produce-consume模型，以及隔离的地址空间的需求，
 我们不再使用pthread实现SMR，而是重新实现了一个线程模型。
@@ -11,10 +69,7 @@
 让每个map worker和reduce worker之间拥有一个共享的channel，
 用于传递map产生的中间结果。
 
-\subsubsection{Phoenix较差scalability的分析}
-必须结合应用程序的特点来说明问题：
-\redt{是什么导致speedup下降（pagefault），为什么hist, wc, sm的pagefault会比较多，为什么pca, sm的pagefault会比较少？}
-我们能够做的改进是不是只对那种pagefault比较读的应用程序有效果呢？
+
 \subsubsection{线程模型}
 Linux操作系统中，使用一个lock来保护地址空间的目的是……
 
