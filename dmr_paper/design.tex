@@ -193,25 +193,51 @@ and the reduce workers can receive from the channel by \codet{chan\_recv}.
 In order to avoid map waiting when the channel buffer is full,
 we design an unbounded size of communication buffer for channel.
 That means a sender can send any number of messages without blocking or waiting.
-Unboundedness goal is the key to achieve high throughput.
+As a result, system can achieve high throughput.
+%Unboundedness goal is the key to achieve high throughput.
 %这个特性的好处
 
+
+%无边界的channel的实现，依赖于底层的extend机制，
+%它允许将channel buffer区域重新映射到一块新的物理地址，
+%并且不影响consumer对旧的物理的读取。
+%channel buffer对应producer和consumer地址空间中一块区域，
+%我们称之为\codet{CHAN}区域，有一个pagetable（\codet{ptab}）用于管理该区域的物理地址映射。
+\begin{figure}[!h!t]  
+	\centering
+	\includegraphics[width=0.5\textwidth]{eps/chan_extend.eps}
+	\caption{channel extend machanism}
+	\label{fig:spmckern:extend}
+\end{figure}
 In order to reach a unbounded buffer,
 We design an extend mechanism 
-which allows remap channel’s buffer to a new page frames.
-To record and trace generations of page frames among the sharing parties, 
-a special anchor extension page is introduced and shared between producer thread and consumers consumer.
-Initially a sequence of pages in channel buffer 
-are mapped to a \codet{anchor} page table (Anchor in Figure
-\ref{fig:spmckern:extend}), 
-in which each page has a corresponding page table entry (PTE).
-Upon a producer page fault, the fault handler will allocate a real page frame and update the faulting page with a
-writable producer mapping so that the producer can write the
-page afterwards.
-When a thread want to send without waiting, 
+which allows remap channel’s buffer to a new page frames,
+and consumer can read the old page frames at the same time.
+In our design, channel buffer is a virtual memory area \code{CHAN}
+in the producer and consumer address space.
+There is a pagetable(\code{ptab}) to store the mapping between virtual addresses and physical addresses, with each mapping as a corresponding page table entry(\code{PTE}).
+
+%extension
+Initially, the system will not allocate the actually page frames for \code{CHAN} area but a a special anchor page(\codet{Anchor1}),
+which is shared between producer and consumer.
+That is each entry(pte) in \code{ptab} points to the address of Anchor1.
+When the producer need send message, 
+writing the data to CHAN, a pagefault will take place.
+Upon a producer page fault, the fault handler will allocate a real page frame(\code{page1}) and the \code{Anchor1}'s \code{pte} point to the page. 
+Then producer can locate the page by \code{pte} and the data need to send will copy to this \code{page1} lastly.
+After sending, consumer can locate the written page\code{page1} by pte 
+and read it.
+
+If the channel buffer(\code{CHAN}) area is full, 
+producer no need to writing, 
+but just remap \code{CHAN} to another anchor \code{Anchor2},
+so that the producer can write the page afterwards.
+To record and trace generations of page frames among old page frames 
+and new page frames, a extension PTE is introduced.
+That mean,
 it can call extend primitive to remap channel buffer to new page frames,
-without changing the old page 
-that consumers may still require. 
+without changing the old page that consumers may still require. 
+Consumer can use the extension \code{pte} to locate the new
 After a consumer receive the old page from the channel, 
 it can call extend to find the new page frames sended by the
 producer.
@@ -219,27 +245,44 @@ The older page frames decrease their reference counts and
 are freed automatically when the counts reach zero.
 
 
-\begin{figure}[!h!t]  
-    \centering
-    \includegraphics[width=0.5\textwidth]{eps/spmckern_extend.eps}
-    \caption{channel extend machanism}
-    \label{fig:spmckern:extend}
-\end{figure}
 
 
-\begin{figure}[htpb]
-	\centering
-	\subfigure[when the channel buffer is not full]{
-		\includegraphics[width=0.35\textwidth]{eps/chan_extend1.eps}
-		\label{fig:dmr:chan:extend1}
-	}
-	\subfigure[the channel buffer is full, remapp the buffer to a new]{
-		\includegraphics[width=0.45\textwidth]{eps/chan_extend2.eps}
-		\label{fig:dmr:chan:extend2}
-	}
-	\caption{Extend mechanism of channel in \myth}
-	\label{fig:time}
-\end{figure}
+
+
+ 
+%a special anchor extension page is introduced and shared between producer thread and consumers consumer.
+%Initially a sequence of pages in channel buffer 
+%are mapped to a \codet{anchor} page table (Anchor in Figure
+%\ref{fig:spmckern:extend}), 
+%in which each page has a corresponding page table entry (PTE).
+%Upon a producer page fault, the fault handler will allocate a real page frame and update the faulting page with a
+%writable producer mapping so that the producer can write the
+%page afterwards.
+%When a thread want to send without waiting, 
+%it can call extend primitive to remap channel buffer to new page frames,
+%without changing the old page 
+%that consumers may still require. 
+
+
+
+
+
+
+%\begin{figure*}[htpb]
+%	\centering
+%	\subfigure[when the channel buffer is not full]{
+%		\includegraphics[width=0.35\textwidth]{eps/chan_extend1.eps}
+%		\label{fig:dmr:chan:extend1}
+%	}
+%	\subfigure[the channel buffer is full, remapp the buffer to a new]{
+%		\includegraphics[width=0.45\textwidth]{eps/chan_extend2.eps}
+%		\label{fig:dmr:chan:extend2}
+%	}
+%	\caption{Extend mechanism of channel in \myth}
+%	\label{fig:time}
+%\end{figure*}
+
+
 
 
 
