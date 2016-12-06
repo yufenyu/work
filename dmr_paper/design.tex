@@ -5,10 +5,9 @@ Then we present a new thread model, which has good scalability.
 }
 
 
-
 \subsection{Scalability of Phoenix}
 %描述Phoenix 的 pool scalability
-In Phoenix, programs are often written to start as many threads as the system has cores,
+In Phoenix, programs are written to start as many threads as the system has cores,
 As indicated by figure\ref{fig:phoenix:speedup}, 
 when the system is larger than their scalability limit 
 adding more threads might actually scale negatively.
@@ -30,7 +29,7 @@ when the core count exceeds 8.
 That means Phoenix waster most of time to wait but not actual work.
 And it can't fully use mulitcores resource.
 In fact, Phoenix takes two strategies to avoid multiple threads operate the global matrix concurrently.
-The spinlock is caused by linux kernel.
+The spinlock is caused by contention the shared structure data multiple threads in Linux kernel.
 \begin{figure}[!h!t]  
     \centering
     \includegraphics[width=0.35\textwidth]{eps/phoenix_spinlock.eps}
@@ -49,13 +48,12 @@ The spinlock is caused by linux kernel.
 %kernel and exploit performance tools to identify scalability
 %bottlenecks.
 %}
-
+Call-graph information and source code analysis show that 
+\_\_ticket\_spin\_lock is caused by pagefault.
 The mmap() system call is used to read in input data. 
 Once the user passes the pointer to the mmap()ed region as a runtime input, 
 multiple threads will concurrently cause page-fault in the input data
 while invoking their map functions.
-Call-graph information and source code analysis show that 
-\_\_ticket\_spin\_lock is caused by pagefault.
 When a large multi-threaded computing job 
 that causes a lot of parallel page-faults, 
 these page-faults will all run into contention on the mm\_sem semaphores.
@@ -129,7 +127,7 @@ the scalability will be bad.
 %这一部分，我们不提生产消费模型，
 %为什么要进行地址空间隔离，通过新的线程模型，我们实现了地址空间隔离，隔离之后有什么好处？相比Phoenix，我们这种新的模型会不会带来开销。
 
-Our goal is to make page faults scale to 
+Our goal is to make pagefaults scale to 
 large numbers of cores.
 There are many way to achive this target such as \cite{Clements2012Scalable}\redt{...}.
 However, We don't want to change the implementation of operating system, 
@@ -139,13 +137,14 @@ how allow page faults to run concurrently
 to eliminate on the per-process read/write lock.
 In fact, if applications use processes instead of threads can avoid a single, 
 shared address space, but this complicates sharing.
-
-To achieve our goal, this paper persents a new concurrent address space design that eliminates the above sources of contention by applying a new program model and by introducing channel, a way to share data between threads.
+To achieve our goal, we persents a new concurrent address space design 
+that eliminates the above sources of contention by applying a new program model and by introducing channel, a way to share data between threads.
 We aim at providing an race-free programming abstraction 
 to support scalable MapReduce.
 %We aim at providing an easy-to-use programming abstraction 
 %to support scalable MapReduce.
-\bluet{
+
+
 With this target, we propose a new thread programming model \myth(Scalable thread).
 %We propose a new thread programming model to support efficient pipeline parallelism.
 %新的线程模型与传统的Pthread模型的主要不同在于：(1)每个线程拥有自己独立的地址空间，这样可以避免多个线程对mm\_struct结构的竞争。(2)线程之间有一个共享的通道，同于线程数据的共享。
@@ -159,14 +158,8 @@ On the other hand,
 Threads based on share space can directly communicate with other threads of its process; 
 While \myth must use interprocess communication to communicate with the other threads.
 We provoide a share channel for threads to communicate.
-The initial state of isolated memory in a thread is inherited from
-its parent thread when it is started. 
-Currently, there is no shared heap among threads, 
-but private heap for each thread.
-On the other hand, comparing to thread, it is bad for sharing data between threads.
-To solute the problem, \myth provide interface of channnel to 
-create, send, receive opration.
-}
+
+
 \label{sec:pm:thread}
 \begin{figure}[htpb]
 \input chanapi.tex
@@ -174,52 +167,37 @@ create, send, receive opration.
 \label{fig:api:thread}
 \end{figure}
 
-
-
 %mapreduce中是如何使用这个简易的模型进行编程和实现的，这个模型潜在的开销是什么
 Figure\ref{fig:api:thread} lists main function of managing threads and channels in \myth.
-Initialize in \myds, the master threads invoke 
-\codet{thread\_alloc} to create map workers and reduce workers
-, and invoke \codet{chan\_alloc} to alloc channels for them.
-In \myds map and reduce are implemented using a producer-consumer model.
-The map threads and reduce threads are
-the producers and consumers, respectively
-(Section 4).
+At initial stage of \myds, the master thread invoke 
+\codet{thread\_alloc} to create map and reduce workers, 
+and then creates and sets up channels for communication between each pair of map worker and reduce worker by invoking \codet{chan\_alloc}.
+After that, the master starts all workers by invoking \codet{thread\_start}.
+In \myds, all channels have one producer 
+to send message and one consumer to receive message, 
+which is a producer-consumer model.
+The master invoke \codet{chan\_setprod} and \codet{chan\_setcons} 
+to set map worker as producer and reduce worker as consumer, respectively.
+(We will describe it in Section 4). 
 
-Map worker, producing key-value, send message(calling \codet{chan\_setprod}),
-and reduce worker as a consumer to receive message(calling \codet{chan\_recv}).
-After creating channels and setting up send-receive relationship,
-both map and reduce workers start work by invoking \codet{thread\_start}.
-When the local buffer is full, 
-Map worker invoke \codet{chan\_send} to send
-the key-value to coresponded channel.
-Then Reduce worker invoke \codet{chan\_recv} to receive
-the key-value from the channel. 
-Though, using \myth can effectively decrease the overhead of contention,
+Though, using \myth can decrease the overhead of contention,
 it also take some extra overhead comparing to Phoneix. 
 The extra overhead focus on initialization(section 5). 
 
 
-
-
-
-
-
 \subsection{Design of the Channel}
-
 %channel的底层实现，以及它无限制的映射机制，想说明的问题是：不需要等待，且没有过多的malloc和free操作带来的开销。
 Once the channel relationships are set up, 
-map workers can invoke \codet{chan\_send} to send messages to channel,
-and reduce workers can receive from the channel by \codet{chan\_recv}.
-%MPI中的channel是不是要等待，是不是预先分配一块固定的大小。
+map workers can invoke \codet{chan\_send} to send key-value to corresponded channel,
+and the reduce workers can receive from the channel by \codet{chan\_recv}.
 In order to avoid map waiting when the channel buffer is full,
-we design an unbounded size of communication buffer.
-Therefore, a sender can send any number of messages without blocking or waiting.
+we design an unbounded size of communication buffer for channel.
+That means a sender can send any number of messages without blocking or waiting.
 Unboundedness goal is the key to achieve high throughput.
 %这个特性的好处
 
 In order to reach a unbounded buffer,
-We design an extend machanism 
+We design an extend mechanism 
 which allows remap channel’s buffer to a new page frames.
 To record and trace generations of page frames among the sharing parties, 
 a special anchor extension page is introduced and shared between producer thread and consumers consumer.
@@ -249,31 +227,19 @@ are freed automatically when the counts reach zero.
 \end{figure}
 
 
-%\begin{figure*}
-%\centering
-% \subfigure[]{
-%  \label{fig:spmc:kernext:a}  
-%  \includegraphics[width=0.23\textwidth]{eps/spmckern-ext0.eps}
-% }
-% \subfigure[]{
-%  \label{fig:spmc:kernext:b}  
-%  \includegraphics[width=0.23\textwidth]{eps/spmckern-ext2.eps}
-% }
-% \subfigure[]{
-%  \label{fig:spmc:kernext:c}  
-%  \includegraphics[width=0.23\textwidth]{eps/spmckern-ext3.eps}
-% }
-% \subfigure[]{
-%  \label{fig:spmc:kernext:d}  
-%  \includegraphics[width=0.23\textwidth]{eps/spmckern-ext4.eps}
-% }
-%\caption{Mechanism of SPMC virtual memory with lazy page mapping and space extension.}
-%\label{fig:dmr:spmc}
-%\end{figure*}
-
-%最后，结合mapreduce来说明这种结构的优势在何处
-
-
+\begin{figure}[htpb]
+	\centering
+	\subfigure[when the channel buffer is not full]{
+		\includegraphics[width=0.35\textwidth]{eps/chan_extend1.eps}
+		\label{fig:dmr:chan:extend1}
+	}
+	\subfigure[the channel buffer is full, remapp the buffer to a new]{
+		\includegraphics[width=0.45\textwidth]{eps/chan_extend2.eps}
+		\label{fig:dmr:chan:extend2}
+	}
+	\caption{Extend mechanism of channel in \myth}
+	\label{fig:time}
+\end{figure}
 
 
 
