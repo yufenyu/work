@@ -104,10 +104,9 @@ the speedup of Phoenix  on hist,  wc and pca is degraded.
 For lr and sm, the speedup is degraded when cores is greater than 16.
 %For linear\_regression (lr) and string\_match (sm),  using 16 or more  cores leads to speedup degradation.
 
-%The scalability of Phoenix is limited, the performance will be
-%better when the number of cores increases from 1 to 4, 
-%while the performance will be worse if using more than 4 cores. 
-%Perf\cite{}.\redt{need to talk more about the results...}
+
+
+
 
 In conclusion, Phoenix can not achieve desired scalability with increasing core count because of the strict barrier and contented lock.
 To aviod the aforementioned issues, a novel MapReduce model, \myds,  is proposed in this paper,

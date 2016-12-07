@@ -86,9 +86,20 @@ which could significantly degrade the performance.
 %vantage of fast inter-task communications in shared memory, thus
 %avoids the expensive network communications among tasks.
 
+Figure 1 shows the scalability of the Phoenix runtime
+measured on our 32-core system with the released applications. 
+Despite the parallelism available in these applications, 
+none of them scales beyond 16 cores, and most of them actually slow down when
+more cores are involved. This is the result of the high contention 
+when utilizing threads across multiple chips. We explain these issues
+in detail in Section 3.
 %我们如何解决这个问题
 %为了改进Phoenix存在的这些问题，我们提出了一个scalable mapreduce库，它即具有较好的性能，且具有较好的scalability.
+
 To remedy the above problems, 
+We propose a modified MapReduce architecture in
+which intermediate data is pipelined between operators,
+while preserving the programming interfaces of previous MapReduce frameworks
 firstly, we propose a Scalable thread libray(\myth).
 Then this paper presents a modified model of \myds(Scalable MapReduce), 
 that can efficiently support MapReduce applications.
