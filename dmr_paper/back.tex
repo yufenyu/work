@@ -8,16 +8,15 @@ Then the limitation of Phoenix in the aspect of performance is analyzed.
 \subsection{MapReduce Programing Model}
 Inspired  by funnctional languages, the MapReduce programming model is 
 proposed for data intensive computation in cluster environment.
-Its simple programming interface require programmer 
-to only define two primitives: map and reduce.
+Its simple programming interface requires programmer 
+to  define only two primitives: map and reduce.
 The map function is applied on the input data and 
 produces a list of intermediate key and value pairs.
 The reduce function is applied on all intermediate
 pairs and  groups all pairs with the same key to a single
 key-value pair. 
-The combine function is an optional operation 
-to aggregates the key and value pairs locally in Map phase 
-aiming to save networking bandwidth and reduce memory consumption.
+In order to save networking bandwidth and reduce memory consumption, 
+the combine function, an optional operation, can aggregate the key and value pairs locally in Map phase.
 
 
 The charm of MapReduce is that, 
@@ -32,10 +31,10 @@ but only processes a partial set of key-value pairs in Map phase.
 
 
 \subsection{Phoenix}
-Phoenix is an implementation of MapReduce for multicore  and multiprocessor systems using Pthreads\cite{}.
-It shows MapReduce is a promising model  and applications written with MapReduce model
+Phoenix is an implementation of MapReduce for multicore  and multiprocessor systems using Pthreads \cite{}.
+It shows MapReduce is a promising model,  and the applications written with MapReduce model
 have competitive scalability and performance in comparison to those
-written with Pthreads\cite{ranger2007phoenix};
+written with Pthreads \cite{ranger2007phoenix};
 Phoenix stores the intermediate key-value pairs produced 
 by the map workers in a global matrix (Figure \ref{fig:phoenix:intermediate}). 
 Each map and reduce workers can write or read this global matrix. 
@@ -76,36 +75,14 @@ Furthermore, the user-defined map functions are usually computation-intensive wh
 
 Second,  in cluster environment, network bandwidth is the key factor for performance since the map and reduce workers, executed in different machines usually,  communicate by the network.
 However, when processing MapReduce applications in multicore environments,  the data structures shared by multiple threads, instead of the network, are the major performance bottlenecks.
-By using the Pthreads,  a share-memory threads model, 
-the threads in Phoenix require to share the process's address space.
+By using  a share-memory threads model, Pthreads,
+the threads in Phoenix need to share the process's address space.
 In fact, there is a single lock for per shared address space inside the operating system’s virtual memory system. 
-As a result, multithreaded applications on many-core processors suffer from serious contended locks.
+As a result, multithreaded applications on many-core processors will naturally suffer from serious contended locks.
 This phenomenon will be common for parallel programming with shared-memory
 multithreading \cite{clements2013radixvm}.
 
 %多核环境下，限制mapreduce性能的关键因素是多线程共享的数据结构。phoenix是基于共享内存的Pthreads多线程编写的，其中每个线程没有自己独立的地址空间，它们需要共享进程的地址空间，在linux中，每个进程地址空间有一个锁对应，当多个线程需要共享时，便会对这个lock竞争，这种现象对于基于共享内存的多线程并行编程非常普片。
-
-\begin{figure}[!h!t]  
-	\centering
-	\includegraphics[width=0.45\textwidth]{eps/phoenix_speedup.eps}
-	\caption{speedup of Phoenix}
-	\label{fig:phoenix:speedup}
-\end{figure}
-
-%as depicted in
-As shown in this figure \ref{fig:phoenix:speedup}, 
-%when using no more than eight cores, the Phoenix scales well on hist ... ;
-%when using no more than 16 cores, the Phoenix scales well on sm and le.
-the Phoenix scales well on histgram (hist), wordcount (wc) and pca when the number of core is less than 8.
-As for the linear\_regression (lr) and string\_match (sm), 
-Phoenix performs well with no more than 16 cores.
-However, when core number is more than  8, 
-the speedup of Phoenix  on hist,  wc and pca is degraded.
-For lr and sm, the speedup is degraded when cores is greater than 16.
-%For linear\_regression (lr) and string\_match (sm),  using 16 or more  cores leads to speedup degradation.
-
-
-
 
 
 In conclusion, Phoenix can not achieve desired scalability with increasing core count because of the strict barrier and contented lock.

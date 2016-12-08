@@ -138,3 +138,21 @@ Related and future work are covered in Sections 6 and 7.
 %Section 4 presents the experimental setup. Section 5 discusses
 %the results in terms of execution time and total power
 %consumption. Finally, Section 6 concludes the paper.
+\begin{figure}[!h!t]  
+	\centering
+	\includegraphics[width=0.45\textwidth]{eps/phoenix_speedup.eps}
+	\caption{speedup of Phoenix}
+	\label{fig:phoenix:speedup}
+\end{figure}
+
+%as depicted in
+As shown in this figure \ref{fig:phoenix:speedup}, 
+%when using no more than eight cores, the Phoenix scales well on hist ... ;
+%when using no more than 16 cores, the Phoenix scales well on sm and le.
+the Phoenix scales well on histgram (hist), wordcount (wc) and pca when the number of core is less than 8.
+As for the linear\_regression (lr) and string\_match (sm), 
+Phoenix performs well with no more than 16 cores.
+However, when core number is more than  8, 
+the speedup of Phoenix  on hist,  wc and pca is degraded.
+For lr and sm, the speedup is degraded when cores is greater than 16.
+%For linear\_regression (lr) and string\_match (sm),  using 16 or more  cores leads to speedup degradation.
