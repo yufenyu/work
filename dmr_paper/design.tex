@@ -36,6 +36,11 @@ That means the time of completing a workload increases quickly if there are more
 %函数的调用图显示，ticket\_spin\_lock几乎全部是由pagefault引起的。
 In order to analyze the limited scalability behavior, 
 Perf\cite{} is exploited to collect execution time  percent information of hot function. 
+\redt{We observe that map function is the hot function as in low number cores, 
+while ticket\_spin\_lock become the hot function in large number cores.
+ticket\_spin\_lock is a type of spinlock which is caused by lock contention.
+In Linux 3.2 kernel, ticket\_spin\_lock is used to ....
+}
 %Figure\ref{fig:phoenix:spinlock}  shows different applications' largest execution time function in 16 and 32 cores.
 Figure \ref{fig:phoenix:spinlock} shows the execution time percent of \_\_ticket\_spin\_lock on each benchmark. 
 We observe that the cost of spinlock increases as the cores number cross a specific value.
