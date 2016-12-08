@@ -8,12 +8,16 @@ Finally, the detail design and implementation of \myth is given.
 \subsection{Scalability of Phoenix}
 %描述Phoenix 的 pool scalability
 Phoenix uses shared-memory multiple threads to implement parallelism,
-and programs written in Phoenix will  start as many threads as the system’s cores.
-However, the parallel scalability of Phoenix is not ideal.
+and programs written in Phoenix will start as many threads as the system’s cores.
+\redt{Ideally, adding more threads and cores to the	runtime 
+	would bring about a linear decrease in execution
+	time.}
+%However, the parallel scalability of Phoenix is not ideal.
+However, Phoenix did not scale as well as expected.
 As indicated by figure \ref{fig:phoenix:speedup}, 
 when the system exceeds their scalability limitation, 
 adding more cores might scale negatively.
-That means the time of completing a workload increases quickly if there are more cores in the system. 
+That means the time of completing a workload increases if there are more cores in the system. 
 % In general, the parallel scalability of Phoenix is poor.
 
 %使用perf来收集热点函数的执行时间，实验结果显示，在32核情况下，(这里可以给出一个图，16和32核下的热点函数分别是什么，占用多少的百分比分别又是多少？)
@@ -38,25 +42,28 @@ In order to analyze the limited scalability behavior,
 Perf\cite{} is exploited to collect execution time  percent information of hot function. 
 \redt{We observe that map function is the hot function as in low number cores, 
 while ticket\_spin\_lock become the hot function in large number cores.
-ticket\_spin\_lock is a type of spinlock which is caused by lock contention.
-In Linux 3.2 kernel, ticket\_spin\_lock is used to ....
+%However, the structure data shared by multiple threads in Linux kernel can cause the lock contention, which will degrade the scalability of Phoenix.
 }
-%Figure\ref{fig:phoenix:spinlock}  shows different applications' largest execution time function in 16 and 32 cores.
-Figure \ref{fig:phoenix:spinlock} shows the execution time percent of \_\_ticket\_spin\_lock on each benchmark. 
-We observe that the cost of spinlock increases as the cores number cross a specific value.
+%To alleviate the overhead of lock, Phoenix has took two strategies to avoid multiple threads contending the share area.
+Figure \ref{fig:phoenix:spinlock} shows the execution time percent of 
+ticket\_spin\_lock on each benchmark. 
+We observe that the cost of spinlock increases quickly as the cores number cross a specific value(ie.8).
 %And in 32 cores, the \_\_ticket\_spin\_lock needs largest execution time for hist, lr, wc, sw.
 Specially, hist with 16 and 32 cores shows that \_\_ticket\_spin\_lock is one function, 
-which has largest execution times  of 40.15\%  and 71.25\%, respectively. 
-Experiment results demonstrate that Phoenix  will suffer from serious lock contention
-when the cores number exceeds 8. 
-That means most of execution time will be used for waiting but not actual computation.
-To alleviate the overhead of lock, Phoenix has took two strategies to avoid multiple threads contending the share area.
-However, the  structure data shared by multiple threads in Linux kernel can cause the lock contention, which 
-will degrade the scalability of Phoenix.
-%The spinlock is caused by contention the shared structure data multiple threads in Linux kernel.
+which has largest execution times of 40.15\%  and 71.25\%, respectively. 
+
+\redt{ticket\_spin\_lock is a type of spinlock which is caused by lock contention in Linux kernel.
+	In Linux 3.2 kernel, ticket\_spin\_lock is used to ....
+	Linux kernel won't scale well on multicores system: 
+	that applications will spend an increasing fraction of their time in the kernel as the number of cores increases.
+	Experiment results demonstrate that Phoenix will suffer from serious lock contention
+	when the cores number exceeds 8. 
+	That means most of execution time will be used for waiting but not actual computation.
+Call-graph information shows that \_\_ticket\_spin\_lock is caused by pagefault.
+That means pagefaults won't scale well on large numbers of cores:	
+}
 
 
-Call-graph information show that \_\_ticket\_spin\_lock is caused by pagefault.
 \begin{figure}[!h!t]  
     \centering
     \includegraphics[width=0.35\textwidth]{eps/phoenix_spinlock.eps}
@@ -96,12 +103,14 @@ Call-graph information show that \_\_ticket\_spin\_lock is caused by pagefault.
 %}
 
 
+
+
 The mmap() system call is utilized to read in input data. 
 Once the user passes the pointer of the mmaped region to runtime as an argument, 
 multiple map threads will concurrently cause pagefault in the input data when they invoke map functions.
-All these pagefaults will contend the unique mm\_sem semaphore
+All these pagefaults will contend the unique mmap\_sem semaphore
 which is used for protecting the address space shared by multithread.
-One reason that Linux uses a semaphore on the address space is 
+One reason that Linux uses a single semaphore on the address space is 
 that it needs a red-black tree to guarantee O(log n)
 lookup time when a process has many mapped memory regions\cite{linux}. 
 %Since the red-black tree requires re-balance when a new memory region is inserted, 
@@ -141,19 +150,6 @@ thus the parallel scalability of the benchmark will degrade.
 %The first measure is to limit them to the maximum number of threads that they can successfully scale to.
 %This of course leaves some of the CPUs idle. 
 
-%Performance data reveal that two functions vma link() and
-%unlink file vma() have the largest execution time (46.02%
-%and 49.97\%) and lock contention. Call-graph information
-%and source code analysis show that the two functions are
-%called when adding a virtual memory address range into the
-%process address space or deleting a virtual memory address range. 
-%When multiple slave processes call mmap() or unmap() concurrently, the 
-%memory mapped file address range should be added into or 
-%deleted from each slave process address space. However, 
-%the same spin lock protecting the memory mapped file 
-%address range should be held or released. Thus, spin lock 
-%contention degrades the parallel scalability performance of 
-%the benchmark. 
 
 
 
@@ -163,35 +159,28 @@ thus the parallel scalability of the benchmark will degrade.
 %这一部分，我们不提生产消费模型，
 %为什么要进行地址空间隔离，通过新的线程模型，我们实现了地址空间隔离，隔离之后有什么好处？相比Phoenix，我们这种新的模型会不会带来开销。
 
-Our goal is to make pagefaults scale to 
-large numbers of cores.
+Our goal is to make pagefaults scale to large numbers of cores.
 There are many way to achive this target such as \cite{Clements2012Scalable}\redt{...}.
-However, We don't want to change the implementation of operating system, 
-but just provoid a easy-to-use scalable thread model.
-This requires addressing a basic problem,
-how allow page faults to run concurrently 
-to eliminate on the per-process read/write lock.
-In fact, if applications use processes instead of threads can avoid a single, 
-shared address space, but this complicates sharing.
-To achieve our goal, we persents a new concurrent address space design 
-that eliminates the above sources of contention by applying a new program model and by introducing channel, a way to share data between threads.
-We aim at providing an race-free programming abstraction 
-to support scalable MapReduce.
-%We aim at providing an easy-to-use programming abstraction 
-%to support scalable MapReduce.
+%However, We don't want to change the implementation of operating system, but just provide a easy-to-use scalable thread model.
+In fact, if applications use processes instead of threads can avoid a single shared address space, but this complicates sharing.
+However, We don't want to change the implementation of operating system or employ process to program, but just provide a modified thread model with elevated scalability.
+This requires addressing a basic problem, how allow pagefaults to eliminate on the per-process read/write semaphore, when multiple threads run concurrently.
+At the same time, we aim at providing an easy-to-use programming abstraction to support scalable MapReduce.
 
-
-With this target, we propose a new thread programming model \myth(Scalable thread).
+To address the problem and achieve our goal, we propose a new thread programming model \myth(Scalable thread). 
+%we persents a new concurrent address space design 
+%that eliminates the above sources of contention by applying a new program model and by introducing channel, a way to share data between threads.
+%We aim at providing an easy-to-use programming abstraction to support scalable MapReduce.
+%With this target, we propose a new thread programming model \myth(Scalable thread).
 %We propose a new thread programming model to support efficient pipeline parallelism.
 %新的线程模型与传统的Pthread模型的主要不同在于：(1)每个线程拥有自己独立的地址空间，这样可以避免多个线程对mm\_struct结构的竞争。(2)线程之间有一个共享的通道，同于线程数据的共享。
-\myth is C library-based and 
-thread in \myth run in separate memory spaces.
-Threads in Pthreads share the address space of the process that created it, 
-while threads in \myth have their own address space,
-meaning each thread has a mm\_struct.
-Therefore, thread no need contend with others thread for lock.
-On the other hand,
-Threads based on share space can directly communicate with other threads of its process; 
+\myth is C library-based.
+On the one hand, threads in \myth run in separate memory spaces, eliminating the contention on the single semaphore. 
+%Threads in Pthreads share the address space of the process that created it, 
+%while threads in \myth have their own address space,
+%meaning each thread has a mm\_struct.
+%Therefore, thread no need contend with others thread for lock.
+On the other hand, threads based on share space can directly communicate with other threads of its process; 
 While \myth must use interprocess communication to communicate with the other threads.
 We provoide a share channel for threads to communicate.
 
@@ -205,16 +194,11 @@ We provoide a share channel for threads to communicate.
 
 %mapreduce中是如何使用这个简易的模型进行编程和实现的，这个模型潜在的开销是什么
 Figure\ref{fig:api:thread} lists main function of managing threads and channels in \myth.
-At initial stage of \myds, the master thread invoke 
-\codet{thread\_alloc} to create map and reduce workers, 
+At initial stage of \myds, the master thread invoke \codet{thread\_alloc} to create map and reduce workers, 
 and then creates and sets up channels for communication between each pair of map worker and reduce worker by invoking \codet{chan\_alloc}.
 After that, the master starts all workers by invoking \codet{thread\_start}.
-In \myds, all channels have one producer 
-to send message and one consumer to receive message, 
-which is a producer-consumer model.
-The master invoke \codet{chan\_setprod} and \codet{chan\_setcons} 
-to set map worker as producer and reduce worker as consumer, respectively.
-(We will describe it in Section 4). 
+The master invoke \codet{chan\_setprod} to set a thread as a producer to send message to channel, and \codet{chan\_setcons} to set thread as a consumer to receive message from channel, respectively. 
+which is a producer-consumer model.(We will describe it in Section 4). 
 
 Though, using \myth can decrease the overhead of contention,
 it also take some extra overhead comparing to Phoneix. 
