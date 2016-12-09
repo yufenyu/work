@@ -102,8 +102,10 @@ That means pagefaults won't scale well on large numbers of cores:
 The mmap() system call is utilized to read in input data. 
 Once the user passes the pointer of the mmaped region to runtime as an argument, 
 multiple map threads will concurrently cause pagefault in the input data when they invoke map functions.
-All these pagefaults will contend the unique mmap\_sem semaphore
-which is used for protecting the address space shared by multiple threads.
+\redt{All these pagefaults need to access the unique mmap\_sem semaphore, which is local to a process address space. As a result, process's multiple threads concurrently pagefaults will casue contention to the single semaphore.
+}
+%All these pagefaults will contend the unique mmap\_sem semaphore
+%which is used for protecting the address space shared by multiple threads.
 One reason why Linux uses the single semaphore on the address space is 
 that it needs a red-black tree to guarantee O(log n)
 lookup time when a process has many mapped memory regions\cite{linux}. 
@@ -111,8 +113,7 @@ lookup time when a process has many mapped memory regions\cite{linux}.
 %Linux protect the entire data structure with a single semaphore.
 %when the process is using multiple threads, 
 %then these threads will be able to access the address space in parallel, 
-Since the semaphore is local to a process address space,
-process's multiple threads concurrently access will cause contention on the unique semaphore.
+%Since the semaphore is local to a process address space, process's multiple threads concurrently access will cause contention on the unique semaphore.
 The semaphore is a sleep lock and may run into convoying problems,
 where waiting threads may get stuck at the end of the wait queue for a long time\cite{Andi2009lmulticore}.
 The contention is intense when there are large amounts of threads,
@@ -207,13 +208,19 @@ is concentrate in the initial stage (we will analyze this overhead in Section 5)
 
 \subsection{Design of the Channel}
 %channel的底层实现，以及它无限制的映射机制，想说明的问题是：不需要等待，且没有过多的malloc和free操作带来的开销。
-Once the channel relationships are set up, 
-map workers can invoke \codet{chan\_send} to send key-value to corresponded channel,
-and the reduce workers can receive from the channel by \codet{chan\_recv}.
-In order to avoid map waiting when the channel buffer is full,
-we design an unbounded size of communication buffer for channel.
-That means a sender can send any number of messages without blocking or waiting.
-As a result, system can achieve high throughput.
+%Once the producer and consumer thread have been created and channel relationships are set,
+In our design, shared-channel is a virtual memory area, called \code{CHAN}, in the producer and consumer address space.
+When the producer invoke \codet{chan\_send} to send data, the data will be copyed to the \code{CHAN} area.
+And the consumer read the data in the \code{CHAN} area to receive data by invoking \codet{chan\_recv} 
+There is a pagetable(\code{ptab}) used to store the mapping between \code{CHAN} memory area and physical address, with each mapping as a corresponding page table entry.
+
+%Once the channel relationships are set up, 
+%the producer can invoke \codet{chan\_send} to send key-value to corresponded channel,
+%and the reduce workers can receive from the channel by \codet{chan\_recv}.
+%In order to avoid the producer waiting when the channel buffer is full,
+%we design an unbounded size of communication buffer for channel.
+%That means a sender can send any number of messages without blocking or waiting.
+%As a result, system can achieve high throughput.
 %Unboundedness goal is the key to achieve high throughput.
 %这个特性的好处
 
@@ -229,47 +236,49 @@ As a result, system can achieve high throughput.
 	\caption{channel extend machanism}
 	\label{fig:spmckern:extend}
 \end{figure}
-In order to reach a unbounded buffer,
-We design an extend mechanism 
-which allows remap channel’s buffer to a new page frames,
-and consumer can read the old page frames at the same time.
-In our design, channel buffer is a virtual memory area \code{CHAN}
-in the producer and consumer address space.
-There is a pagetable(\code{ptab}) to store the mapping between virtual addresses and physical addresses, with each mapping as a corresponding page table entry(\code{PTE}).
 
 %extension
-Initially, the system will not allocate the actually page frames for \code{CHAN} area but a a special anchor page(\codet{Anchor1}),
-which is shared between producer and consumer.
-That is each entry(pte) in \code{ptab} points to the address of Anchor1.
-When the producer need send message, 
-writing the data to CHAN, a pagefault will take place.
-Upon a producer page fault, the fault handler will allocate a real page frame(\code{page1}) and the \code{Anchor1}'s \code{pte} point to the page. 
-Then producer can locate the page by \code{pte} and the data need to send will copy to this \code{page1} lastly.
-After sending, consumer can locate the written page\code{page1} by pte 
-and read it.
+Initially, as show in Figure \ref{fig:spmckern:extend}(a), the runtime will not allocate the actual page frames for \code{CHAN} area but map it to a special page frame--- anchor page table(\codet{Anchor1}), which is shared by the producer and consumer.
+At the same time, ench entry in the \code{ptab} of the producer and the consumer will point to the corresponding Anchor1' entry. 
 
-If the channel buffer(\code{CHAN}) area is full, 
-producer no need to writing, 
-but just remap \code{CHAN} to another anchor \code{Anchor2},
-so that the producer can write the page afterwards.
-To record and trace generations of page frames among old page frames 
-and new page frames, a extension PTE is introduced.
-That mean,
-it can call extend primitive to remap channel buffer to new page frames,
-without changing the old page that consumers may still require. 
-Consumer can use the extension \code{pte} to locate the new
-After a consumer receive the old page from the channel, 
-it can call extend to find the new page frames sended by the
-producer.
-The older page frames decrease their reference counts and
-are freed automatically when the counts reach zero.
+%That is each entry(pte) in \code{ptab} points to the address of Anchor1(Anchor1 in Figure\ref{fig:spmckern:extend}(a)).
+When the producer sends data, the runtime attempts to write the sened data into the \code{CHAN} area, which will trigger a pagefault. 
+%writing the data to CHAN, a pagefault will take place.
+Then the pagefault handler will allocate a page frame(\code{page1}) for the producer and the corresponding \code{pte} in \code{Anchor1} will be updated to point to the page(\code{page1}). 
+%After that, the runtime can copy the sended data to the page(\code{page1}).
+%Then producer can locate the page by \code{pte} and the data need to send will copy to this \code{page1} lastly.
+After that, the consumer can locate the written page frame\code{page1} by the anchor page(\code{Anchor1}, and then read data from \code{page1}.
 
 
+If the channel buffer(\code{CHAN}) area is full, the producer need to wait until the data in the channel buffer been removed by the consumer, traditionally, which is limited the performance and throughput.
+To avoid the producer waiting, we design an \codet{extend} mechanism which allows the producer send data 
+without caring the buffer full.
+The mechanism will remap \code{CHAN} area to the new page frames to another anchor(Figure  \ref{fig:spmckern:extend} (b)). 
+Then the runtime will allocate the page frame(\codet{page2}) for the producer, which will be recorded in corresponding \code{Anchor2}'s PTE.
+To record and trace generations of page frames among old page frames and new page frames, a extension PTE is introduced.
+And the consumer will not be distracted by the extent mechanism and it can read the data from the old page frame(\code{page1}).
+When the consumer receives all data from the old page frames, it can locate the new page frames by the extension-PTE.
+The older page frames decrease their reference counts and are freed automatically when the counts reach zero.
 
 
+%and consumer can read the old page frames at the same time.
+%In order to reach a unbounded buffer,
+
+%but just remap \code{CHAN} to another anchor \code{Anchor2},
+%so that the producer can write the page afterwards.
+%To record and trace generations of page frames among old page frames 
+%and new page frames, a extension PTE is introduced.
+%That mean,
+%it can call extend primitive to remap channel buffer to new page frames,
+%without changing the old page that consumers may still require. 
+%Consumer can use the extension \code{pte} to locate the new
+%After a consumer receive the old page from the channel, 
+%it can call extend to find the new page frames sended by the
+%producer.
+%The older page frames decrease their reference counts and
+%are freed automatically when the counts reach zero.
 
 
- 
 %a special anchor extension page is introduced and shared between producer thread and consumers consumer.
 %Initially a sequence of pages in channel buffer 
 %are mapped to a \codet{anchor} page table (Anchor in Figure
@@ -284,27 +293,11 @@ are freed automatically when the counts reach zero.
 %that consumers may still require. 
 
 
-
-
-
-
-%\begin{figure*}[htpb]
-%	\centering
-%	\subfigure[when the channel buffer is not full]{
-%		\includegraphics[width=0.35\textwidth]{eps/chan_extend1.eps}
-%		\label{fig:dmr:chan:extend1}
-%	}
-%	\subfigure[the channel buffer is full, remapp the buffer to a new]{
-%		\includegraphics[width=0.45\textwidth]{eps/chan_extend2.eps}
-%		\label{fig:dmr:chan:extend2}
-%	}
-%	\caption{Extend mechanism of channel in \myth}
-%	\label{fig:time}
-%\end{figure*}
-
-In the follow section, we will describe \myds, 
-which is based on \myth.
-we focus on how the producer-consumer model and unbounded channel be used in \myds.
+In conclusion, in order to avoid the producer waiting when the shared-channel is full, we design an unbounded size of communication buffer for channel, which is a prominent feature.
+We will detail how this feature will be used in \myds in Section 4.
+%That means a sender can send any number of messages without blocking or waiting.
+%As a result, system can achieve high throughput.
+%Unboundedness goal is the key to achieve high throughput.
 
 
 

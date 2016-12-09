@@ -1,12 +1,8 @@
 \section{Implementation and Runtime}
-In this section we discuss our extensions to 
-the MapReduce programming model and shows the major changes to runtime to 
-support \myds
-to support pipelining between Map and Reduce (Section 3.2). 
-We describe how our design supports
-piplelining (Section 3.3), and discuss the buffer design (Section 3.4). 
-Our focus here is on Producer-Consumer model; 
-We defer performance results to Section 5.
+In this section we discuss our extensions to the MapReduce programming model and shows the major changes to runtime of \myds. 
+Then we describe how our design supports pipelining of Map and Reduce phase(Section 3.2).
+The implementation of the map buffer will be described in Section 3.3.
+Finally, we defer performance results to Section 5.
 
 
 
@@ -50,7 +46,7 @@ Then workers will be in the isolated address space
 avoiding contention on a single per-process lock, 
 which we have introduced in section 3.
 On the other hand, We propose produce-consumer model to 
-pipeline map and reduce phase. 
+pipeline Map and Reduce phase. 
 ie. map worker as a producer insert key-value into local buffer, 
 and send the data of buffer to channel, when the buffer is full.
 Then reduce worker as a consumer will fetch key-value from channel. 
