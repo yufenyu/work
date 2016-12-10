@@ -1,8 +1,8 @@
 \section{Design of thread program model}
 %这一部分，首先，我们将详细分析Phoenix较差scalability的根本原因，然后针对Phoenix scalability存在的challenge，我们提出可行的解决方案，即构造一种具有较好scalability的thread model。然后详细解释这种新的线程模型的详细设计方案，最后具体的实验部分在section 6
 In this section, we first investigate the main factor of Phoenix's limited scalability, 
-and then present a new thread model (\myth), which can achieve good scalability.
-Finally, the detail design and implementation of \myth is given.
+and then present a new thread model (\myth), which can support \myds to achieve good scalability.
+Finally, the detail design and implementation of \myth will be given.
 
 
 \subsection{Scalability of Phoenix}
@@ -12,8 +12,8 @@ and programs written in Phoenix will start as many threads as the system's cores
 Ideally, adding more threads and cores to the runtime would bring about a linear decrease in execution time.
 %However, the parallel scalability of Phoenix is not ideal.
 However, Phoenix can not scale as well as expected.
-As indicated in figure \ref{fig:phoenix:speedup}, 
-when the system exceeds their scalability limitation, 
+As indicated in Figure \ref{fig:phoenix:speedup}, 
+when the system exceeds its scalability limitation, 
 adding more cores might scale negatively.
 That means the time of completing a workload will increase if there are more cores in the system. 
 % In general, the parallel scalability of Phoenix is poor.
@@ -44,12 +44,12 @@ while \_\_ticket\_spin\_lock will become the hottest function with more cores.
 %To alleviate the overhead of lock, Phoenix has took two strategies to avoid multiple threads contending the share area.
 Figure \ref{fig:phoenix:spinlock} shows the execution time percent of 
 \_\_ticket\_spin\_lock on each benchmark. 
-We observe that the cost of spinlock increases quickly as the cores number cross a specific value (ie.8).
+We observe that the cost of spinlock increases quickly as the cores number cross a specific value (ie. 8).
 %And in 32 cores, the \_\_ticket\_spin\_lock needs largest execution time for hist, lr, wc, sw.
-Specially, hist with 16 and 32 cores shows that \_\_ticket\_spin\_lock is the function that has largest execution times of 40.15\%  and 71.25\%, respectively. 
+Specially, hist with 16 and 32 cores shows that \_\_ticket\_spin\_lock is the function that has largest execution time percents of 40.15\%  and 71.25\%, respectively. 
 
-\redt{ticket\_spin\_lock is a type of spinlock which is caused by lock contention in Linux kernel.
-	In Linux 3.2 kernel, ticket\_spin\_lock is used to ....
+\redt{\_\_ticket\_spin\_lock is a type of spinlock which is caused by lock contention in Linux kernel.
+	In Linux 3.2 kernel, \_\_ticket\_spin\_lock is used to ....
 	Linux kernel won't scale well on multicores system: 
 	that applications will spend an increasing fraction of their time in the kernel as the number of cores increases.
 	Experiment results demonstrate that Phoenix will suffer from serious lock contention
@@ -102,20 +102,20 @@ That means pagefaults won't scale well on large numbers of cores:
 The mmap() system call is utilized to read in input data. 
 Once the user passes the pointer of the mmaped region to runtime as an argument, 
 multiple map threads will concurrently cause pagefault in the input data when they invoke map functions.
-\redt{All these pagefaults need to access the unique mmap\_sem semaphore, which is local to a process address space. As a result, process's multiple threads concurrently pagefaults will casue contention to the single semaphore.
-}
+All these pagefaults need to access the unique mmap\_sem semaphore, which is local to a process address space. As a result, multiple threads concurrently pagefaults will casue contention to the single semaphore.
+
 %All these pagefaults will contend the unique mmap\_sem semaphore
 %which is used for protecting the address space shared by multiple threads.
-One reason why Linux uses the single semaphore on the address space is 
-that it needs a red-black tree to guarantee O(log n)
-lookup time when a process has many mapped memory regions\cite{linux}. 
+One reason why Linux uses this single semaphore on the address space is 
+that it needs a red-black tree to guarantee $O$(log$n$)
+lookup time when a process has many mapped memory regions \cite{linux}. 
 %Since the red-black tree requires re-balance when a new memory region is inserted, 
 %Linux protect the entire data structure with a single semaphore.
 %when the process is using multiple threads, 
 %then these threads will be able to access the address space in parallel, 
 %Since the semaphore is local to a process address space, process's multiple threads concurrently access will cause contention on the unique semaphore.
 The semaphore is a sleep lock and may run into convoying problems,
-where waiting threads may get stuck at the end of the wait queue for a long time\cite{Andi2009lmulticore}.
+where waiting threads may get stuck at the end of the wait queue for a long time \cite{Andi2009lmulticore}.
 The contention is intense when there are large amounts of threads,
 which will lead to the parallel scalability degradation on the benchmarks.
 %Therefore, when performing many threads,  the spinlock contention will degrade the parallel scalability performance of the benchmark.
@@ -155,12 +155,12 @@ which will lead to the parallel scalability degradation on the benchmarks.
 
 Our goal is to enable the pagefaults to be scalable  for many cores.
 There are some ways to achieve this target. 
-For example, in \cite{Clements2012Scalable},  a scalable operator system is proposed by using ....;
+For example, in \cite{Clements2012Scalable},  a scalable operation system is proposed by using ....;
 in \cite{},  the authors think process has a better scalability than thread since the process needs not to share the address space with the other processes.
 %applications use processes instead of threads can avoid a single shared address space
 However, modifying operation system is impracticable and employing the process rather than the thread will make sharing become complicated. 
 In order to provide a practicable and simple solution, a novel programming model \myth (Scalable thread) with better scalability,  supporting scalable MapReduce (\myds) compatibly, will be presented in this paper.
-Therefore, a basic issue needs to be solved, that is how to enable threads to eliminate contention on the per-process read/write semaphore when multiple threads concurrently run pagefaults.
+Therefore, a key problem to be solved is that how to enable threads to eliminate contention on the per-process read/write semaphore when multiple threads concurrently run pagefaults.
 %This requires addressing a basic problem, how allow pagefaults to eliminate on the per-process read/write semaphore, when multiple threads run concurrently.
 %At the same time, we aim at providing an easy-to-use programming abstraction to support scalable MapReduce.
 %The proposed \myth can support scalable MapReduce (\myds).
@@ -194,25 +194,25 @@ So, we give a shared-channel for the threads to communicate with the other threa
 \end{figure}
 
 %mapreduce中是如何使用这个简易的模型进行编程和实现的，这个模型潜在的开销是什么
-Figure \ref{fig:api:thread} lists main function of managing threads and channels in \myth.
-In the case of \myds, at initial stage, the master thread invokes \codet{thread\_alloc} to allocate map threads and reduce threads, and then creates  shared-channel for communication between each pair of map  and reduce threads by invoking \codet{chan\_alloc}.
+Figure \ref{fig:api:thread} lists the main functions of managing threads and channels in \myth.
+In the case of \myds, at initial stage, the master thread invokes \codet{thread\_alloc} to allocate map threads and reduce threads, and then creates the shared-channel  between each pair of map  and reduce threads by invoking \codet{chan\_alloc}.
 To set up the shared-channel, the master invokes \codet{chan\_setprod} and \codet{chan\_setcons} to set the map and reduce threads as producers and consumers, respectively. 
 The producer sends messages to the shared-channel, and the consumer receives the messages from it,
 which is a typical producer-consumer model (we will detail it in Section 4). 
 Finally, the master starts all threads to work by invoking \codet{thread\_start}.
 
 Although using \myth can decrease the overhead of contention,
-it also takes some extra overhead in comparison to Phoneix. The extra overhead 
+it also takes extra overhead in comparison to Phoneix. The experiments demonstrate that the extra overhead 
 is concentrate in the initial stage (we will analyze this overhead in Section 5). 
 
 
 \subsection{Design of the Channel}
 %channel的底层实现，以及它无限制的映射机制，想说明的问题是：不需要等待，且没有过多的malloc和free操作带来的开销。
 %Once the producer and consumer thread have been created and channel relationships are set,
-In our design, shared-channel is a virtual memory area, called \code{CHAN}, in the producer and consumer address space.
-When the producer invoke \codet{chan\_send} to send data, the data will be copyed to the \code{CHAN} area.
-And the consumer read the data in the \code{CHAN} area to receive data by invoking \codet{chan\_recv} 
-There is a pagetable(\code{ptab}) used to store the mapping between \code{CHAN} memory area and physical address, with each mapping as a corresponding page table entry.
+In our design, the shared-channel is a virtual memory area, called \code{CHAN} in the producer and consumer address space.
+When the producer invokes \code{chan\_send} to send data, the sent data will be copyed to the \code{CHAN} area.
+And then the consumer reads the data in the \code{CHAN} area  by invoking \code{chan\_recv}.
+There is a pagetable (\code{ptab}) used to store the mapping between \code{CHAN} memory area and physical address, with each mapping as a corresponding page table entry.
 
 %Once the channel relationships are set up, 
 %the producer can invoke \codet{chan\_send} to send key-value to corresponded channel,
@@ -238,27 +238,27 @@ There is a pagetable(\code{ptab}) used to store the mapping between \code{CHAN} 
 \end{figure}
 
 %extension
-Initially, as show in Figure \ref{fig:spmckern:extend}(a), the runtime will not allocate the actual page frames for \code{CHAN} area but map it to a special page frame--- anchor page table(\codet{Anchor1}), which is shared by the producer and consumer.
-At the same time, ench entry in the \code{ptab} of the producer and the consumer will point to the corresponding Anchor1' entry. 
+Initially, as shown in Figure \ref{fig:spmckern:extend}(a), the runtime will not allocate the actual page frames for \code{CHAN} area but map it to a special page frame--- anchor page table (\codet{Anchor1}) which is shared by the producer and consumer.
+Meanwhile, each entry in the \code{ptab} of both the producer and consumer will  point to the same entry in \code{Anchor1}. 
 
 %That is each entry(pte) in \code{ptab} points to the address of Anchor1(Anchor1 in Figure\ref{fig:spmckern:extend}(a)).
-When the producer sends data, the runtime attempts to write the sened data into the \code{CHAN} area, which will trigger a pagefault. 
+When the producer sends data, the runtime attempts to write the sent data into the \code{CHAN} area, which will trigger a pagefault. 
 %writing the data to CHAN, a pagefault will take place.
-Then the pagefault handler will allocate a page frame(\code{page1}) for the producer and the corresponding \code{pte} in \code{Anchor1} will be updated to point to the page(\code{page1}). 
+Then the pagefault handler will allocate a page frame (\code{page1}) for the producer, and the corresponding \code{pte} in \code{Anchor1} will be updated to point to the allocated page (\code{page1}). 
 %After that, the runtime can copy the sended data to the page(\code{page1}).
 %Then producer can locate the page by \code{pte} and the data need to send will copy to this \code{page1} lastly.
-After that, the consumer can locate the written page frame\code{page1} by the anchor page(\code{Anchor1}, and then read data from \code{page1}.
+After that, by the anchor page (\code{Anchor1}), the consumer can locate the page frame \code{page1}  and then read data from \code{page1}.
 
 
-If the channel buffer(\code{CHAN}) area is full, the producer need to wait until the data in the channel buffer been removed by the consumer, traditionally, which is limited the performance and throughput.
-To avoid the producer waiting, we design an \codet{extend} mechanism which allows the producer send data 
-without caring the buffer full.
-The mechanism will remap \code{CHAN} area to the new page frames to another anchor(Figure  \ref{fig:spmckern:extend} (b)). 
-Then the runtime will allocate the page frame(\codet{page2}) for the producer, which will be recorded in corresponding \code{Anchor2}'s PTE.
-To record and trace generations of page frames among old page frames and new page frames, a extension PTE is introduced.
-And the consumer will not be distracted by the extent mechanism and it can read the data from the old page frame(\code{page1}).
-When the consumer receives all data from the old page frames, it can locate the new page frames by the extension-PTE.
-The older page frames decrease their reference counts and are freed automatically when the counts reach zero.
+In general producer-consumer model, if the channel buffer is full, the producer needs to wait until the consumer removes the data from it, which limits the performance and throughput of the system.
+To avoid the producer waiting, we design a channel buffer with unbounded size  by exploiting an \codet{extend} mechanism\cite{}.
+This mechanism allows the producer sending data with no need for waiting when the channel buffer is full.
+This \codet{extend} mechanism (Figure  \ref{fig:spmckern:extend}(b)) will remap the channel buffer (\code{CHAN} area) to another anchor and allocate some new page frames for the producer. 
+And the consumer will not be disturbed by the \codet{extend} mechanism and it can continuously read the data from the original page frames.
+%Then the runtime will allocate the page frame(\codet{page2}) for the producer, which will be recorded in corresponding \code{Anchor2}'s PTE.
+To record and trace the original  and  new page frames, an extension pte is introduced (\code{extension\_pte}).
+When the consumer receives all data from the original page frames, it will locate the new page frames by the \code{extension\_pte}.
+The original page frames will decrease their reference counts and are automatically freed  when the counts reach zero.
 
 
 %and consumer can read the old page frames at the same time.
@@ -293,8 +293,8 @@ The older page frames decrease their reference counts and are freed automaticall
 %that consumers may still require. 
 
 
-In conclusion, in order to avoid the producer waiting when the shared-channel is full, we design an unbounded size of communication buffer for channel, which is a prominent feature.
-We will detail how this feature will be used in \myds in Section 4.
+In conclusion, we design a scalable thread model (\myth) and provide an unbounded shared-channel for threads to communicate. This unbounded shared-channel is a prominent feature of \myth, which is the main difference between our \myth and the previous works. 
+We will detail how to sufficiently use this feature to implement the scalable MapReduce (\myds)  in Section 4.
 %That means a sender can send any number of messages without blocking or waiting.
 %As a result, system can achieve high throughput.
 %Unboundedness goal is the key to achieve high throughput.
