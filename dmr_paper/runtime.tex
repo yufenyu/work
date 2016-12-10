@@ -1,7 +1,7 @@
 \section{Implementation and Runtime}
-In this section we discuss our extensions to the MapReduce programming model and shows the major changes to runtime of \myds. 
-Then we describe how our design supports pipelining of Map and Reduce phase(Section 3.2).
-The implementation of the map buffer will be described in Section 3.3.
+In this section we discuss our extensions for the MapReduce programming model and show the major changes to runtime of \myds. 
+Then we describe our design how to support pipelining of Map and Reduce phase (Section 4.2.1).
+The implementation of intermediate buffer between Map and Reduce phase will be given in Section 4.2.2.
 Finally, we defer performance results to Section 5.
 
 
@@ -9,20 +9,17 @@ Finally, we defer performance results to Section 5.
 \subsection{Execution flow}
 \begin{figure}[!h!t]  
     \centering
-    \includegraphics[width=0.5\textwidth]{eps/dmr_workflow.eps}
-    \caption{The workflow of DMR}
+    \includegraphics[width=0.45\textwidth]{eps/dmr_workflow.eps}
+    \caption{The workflow of \myds}
     \label{fig:dmr:workflow}
 \end{figure}
 
 %不同与Phoenix，DMR将任务队列静态的划分给每个map worker，这样做的好处是，可以避免多个map worker对对任务队列操作从而产生锁的开销。
-\myds's implementation of MapReduce closely resembles Phoenix’s. 
-There is a single master managing a number of slaves worker. 
-Figure\ref{fig:dmr:workflow} illustrates the workflow of \myds,
-including three main phases: map, reduce, and merge. 
-At the beginning, a split function divides the input
-data as a task and push the task into a taskQueue. 
-On multi-core CPUs, a worker is handled by one thread, 
-which is a \myth thread in \myds.
+The implementation of MapReduce in  \myds is similar to that of in Phoenix. 
+There is a single master worker managing a number of slave workers. Unlike Phoenix,  a worker in \myds is handled by a \myth thread rather than a Pthread thead.
+Figure \ref{fig:dmr:workflow} illustrates the workflow of \myds, including three main phases: map, reduce and merge. 
+At the beginning,  the input data is divided into some tasks by a split function, and then these tasks are pushed  into a task queue. 
+%On multi-core CPUs, a worker is handled by one thread, which is a \myth thread in \myds.
 %A worker usually needs to process multiple input elements. 
 %Thus the map function is applied to the input elements one by one. 
 %Such an operation of applying the map function for an input element is 
@@ -32,26 +29,19 @@ which is a \myth thread in \myds.
 %Then in the reduce phase, each reduce operation
 %applies the reduce function to a set of intermediate pairs
 %with the same key. 
-Likely in cluster, the worker in Map phase pull a task from the queue, 
-and apply the map function for the tasks.
-Each map worker produces intermediate key-value pairs and insert them into a local buffer.
-Then worker in Reduce phase will invoke reduce function to aggregates a set of intermediate pairs with the same key.  
+Then workers in Map phase will get these tasks from the task queue and apply the map function to the tasks.
+The intermediate key-value pairs produced by the map worker will be inserted into a local buffer.
+When this local buffer is full, the map worker will send the intermediate data of the buffer to a one-to-one channel.
+After that, the reduce worker can receive this data from the channel and invoke reduce function to aggregate them with the same key.  
 Finally the results from multiple reduce workers are merged and output.
 
-Compared with existing work, 
-our \myds has two main design to improve its scalability and performance.
-On the one hand, \myds implemente a worker as \myth thread 
-instead of as a single multi-thread process.
-Then workers will be in the isolated address space 
-avoiding contention on a single per-process lock, 
-which we have introduced in section 3.
-On the other hand, We propose produce-consumer model to 
-pipeline Map and Reduce phase. 
-ie. map worker as a producer insert key-value into local buffer, 
-and send the data of buffer to channel, when the buffer is full.
-Then reduce worker as a consumer will fetch key-value from channel. 
-That means reduce phase can start without waiting the Map phase finished.
-As a result, \myds break the barrier in Phoenix.
+Compared with existing work, our \myds takes two main strategies to improve its scalability and performance.
+On the one hand, a worker in \myds is implemented as a \myth thread instead of a shared-memory thread.
+Therefore, threads in the isolated address space can avoid contending on a single per-process lock, which has introduced in Section 3.2.
+On the other hand, the producer-consumer model in Section 3.2 is used to pipeline Map and Reduce phase,
+i.e., the map worker as a producer send key-value pairs to the channel and  the reduce worker as a consumer will receive the key-value pairs from the channel. 
+Once the reduce workers receive these key-value pairs, it will invoke the reduce function to work with no need for waiting all workers in Map phase finished.
+%As a result, \myds breaks the barrier in Phoenix.
 
 %The map phase reads the task’s split from task queue,
 %parses it into key-value pairs, and applies
@@ -79,29 +69,22 @@ As a result, \myds break the barrier in Phoenix.
 %and enters the sort phase.
 %将之前对combiner和merge阶段的特征进行简单的总结
 {\bf Combiner.}
-In order to maximally reduce memory pressure due to intermediate key-value
-storage.
-To reduce the amount of communication between mappers and reducers, a mapper
-can combine its produced key/value pairs with the same key
-%做法，开销，优势，我们的特点，可以在reduce阶段进行combiner
-The imbalance of tasks can be solved by dynamic scheduling in the Map phase. 
+There is a optional \code{Combiner} operation, which is a local reduce in Map phase, can maximally reduce memory pressure caused by the intermediate key-value storage.
+Also, in our \myds the \code{Combiner} operation can reduce the communication traffic  between mappers and reducers.
+Furthermore, \myds is able to support the \code{Combiner} operation in Reduce phase to cope with the pressure of data skew. 
 %%事实上，为了防止出现数据倾斜的问题，即map阶段的很多key都发送到一个reduce，导致某个reduce有过多的动态内存分配，甚至可能出现内存不够的情况，我们可以对reduce的数据做局部的combiner
 %However, in the Reduce phase, 
 %as all values for the same key must be in one reduce task, 
 %it is not always feasible to generate a large number reduce tasks for
 %%dynamic scheduling.
 
-{\bf Merge.}
-Each Reduce generates a set of output key/value
-pairs, and the library’s Merge phase sorts them by key to
-produce the final output. 
-A MapReduce job may declare reduce function as NULL. 
-For such an application, 
-Phoenix still performs reduction on the intermediate data using a default reduce function, 
-which traverses key-value pairs. 
-This approach is inefficient. 
-Unlike Phoenix, for applications without reduce function, 
-\myds does not start the reduce phase and directly starts the merge phase after the map phase.
+{\bf Reduce.}
+Each reduce worker generates a set of output key-value pairs.
+According to the key, the library's Merge phase  will sort these pairs and then produce the final output. 
+If an application no need to do reduce work, i.e., the reduce function is NULL,
+Phoenix still performs reduction on the intermediate data by using a default reduce function which traverses key-value pairs. 
+This procedure is inefficient. 
+Unlike Phoenix, for applications without Reduce function, \myds does not start the Reduce phase but directly starts the Merge phase after the Map phase.
 
 %做法，作用，我们的优化，不需要进行reduce和merge的阶段，应当尽量避免，以降低时间的开销
 
