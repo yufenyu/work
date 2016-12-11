@@ -69,8 +69,8 @@ Once the reduce workers receive these key-value pairs, it will invoke the reduce
 %and enters the sort phase.
 %将之前对combiner和merge阶段的特征进行简单的总结
 {\bf Combiner.}
-There is a optional \code{Combiner} operation, which is a local reduce in Map phase, can maximally reduce memory pressure caused by the intermediate key-value storage.
-Also, in our \myds the \code{Combiner} operation can reduce the communication traffic  between mappers and reducers.
+There is a optional \code{Combiner} operation, which is a local aggregation in Map phase, can maximally reduce memory pressure caused by the intermediate key-value storage.
+In addition, the \code{Combiner} operation can reduce the communication traffic  between map workers and reducer workers in our \myds.
 Furthermore, \myds is able to support the \code{Combiner} operation in Reduce phase to cope with the pressure of data skew. 
 %%事实上，为了防止出现数据倾斜的问题，即map阶段的很多key都发送到一个reduce，导致某个reduce有过多的动态内存分配，甚至可能出现内存不够的情况，我们可以对reduce的数据做局部的combiner
 %However, in the Reduce phase, 
@@ -84,25 +84,27 @@ According to the key, the library's Merge phase  will sort these pairs and then 
 If an application no need to do reduce work, i.e., the reduce function is NULL,
 Phoenix still performs reduction on the intermediate data by using a default reduce function which traverses key-value pairs. 
 This procedure is inefficient. 
-Unlike Phoenix, for applications without Reduce function, \myds does not start the Reduce phase but directly starts the Merge phase after the Map phase.
+Unlike Phoenix, for applications without Reduce function, \myds does not start the Reduce phase but directly starts the Merge after the Map phase.
 
 %做法，作用，我们的优化，不需要进行reduce和merge的阶段，应当尽量避免，以降低时间的开销
 
 \subsection{Pipelined execution}
-Pipelined map and reduce has been adopted 
+Pipelined map and reduce have been adopted 
 in the MapReduce framework for distributed computing\cite{Condie2010mapreduce}. 
 Condie et al. shows since pipelining delivers data downstream operators
 more promptly, it can increase opportunities for
-parallelism, improve utilization, and reduce response
+parallelism, improve utilization and reduce response
 time.
 And results demonstrate that pipeline can reduce job completion times.
 %since the intermediate data is delivered to
 %downstream operators more promptly, 
 %it is able to improve resource utilization.
-%In general MapReduce programming model, 
-However, in order to avoid multiple mapper and reducer contend the global matrix,
-there is a strict barrier between the Map and Reduce phases,
-which is bad for the parallelism and the overall hardware resource utilization.
+%In general MapReduce programming model,
+ 
+%However, in order to avoid multiple mapper and reducer contend the global matrix,
+%there is a strict barrier between the Map and Reduce phases,
+%which is bad for the parallelism and the overall hardware resource utilization.
+
 %the workers in one phase can only be started 
 %until all workers in the previous phase has been finished. 
 %In fact, MapReduce workloads
@@ -120,41 +122,35 @@ which is bad for the parallelism and the overall hardware resource utilization.
 %construct the global container. 
 % )
 
-MRPhi\cite{lu2013mrphi}design a producer-consumer model 
-to pipeline the map and reduce phases.
-There is a queue, in which map insert data into the queue, and reduce remove the data from it. 
+MRPhi\cite{lu2013mrphi}, a MapReduce framework optimized for the Intel Xeon Phi coprocessor,
+pipelines the map and reduce phases to better utilize the hardware resource by adopting a typical producer-consumer model.
+There is a many-to-one queue in the model,  in which multiple map workers will insert data into the queue, and then the single reduce worker removes the data from it. 
 %There are three major data structures, 
 %which are local hash tables, a global hash table, 
 %and partition queues. Specifically, 
-Specially, When a local hash table of mapper is full,
-key-value pairs stored in this table are partitioned and
-pushed into corresponding queues. 
-Meanwhile, one reduce worker works on one queue to merge the key-value pairs to
-the final global hash table. 
+Specifically, when a local hash table in map worker is full, key-value pairs stored in this table are partitioned and pushed into the corresponding queue. 
+Meanwhile, one reduce worker will work on one queue to merge the key-value pairs to the final global hash table. 
 
-However, there are two main defects of producer-consumer model in MRPhi.
-Firstly, The queue used in MRPhi is a many-to-one queue.
-Multiple map worker will append data to the tail of queue {\color{gray}contendly}. 
+However, there are some deficiencies of producer and consumer model in MRPhi.
+Since the queue used in MRPhi is a many-to-one queue, multiple map workers will append data to the tail of queue  concurrently, which will lead to contend. 
 %when one thread is appending, any thread waiting to append is stalled.
 %That means more time spent in waiting lock.
-Secondly, They don’t describe, however, how to manage the queue,
-which using a allocted space or by dynamic memory allocation.
-if using a allocated space, when the queue is full, 
-the producer will blocking waiting for a slot in the queue.
-it is bad for parallelion excution of Map and Reduce.
-if dynamic memory allocation, 
-map no need waiting, while there will have a large number of malloc and free,
-which causing overhead.
+In addition, it is worth mention that they do not describe how to manage the queue.
+%In fact, there are two ways to manage this queue, 
+\redt{In fact, this queue can be managed by allocating a fixed region or with the help of dynamic memory allocation.
+%either allocation a fixed regions or with the help of dynamic memory allocation as required.
+If the fixed region is allocated, the map worker will block waiting when the queue is full, which is not good for throughput}.
+If the dynamic memory allocation is used,  expensive malloc and free operations are required to manage the queue although map no need waiting,  which will cause overhead.
 
 
-\subsubsection{Producer-Consumer model}
-To aviod the aforementioned issues, 
-we design a more efficient producer-consumer model. 
+%\subsubsection{Producer-Consumer model}
+%To aviod the aforementioned issues, 
+%we design a more efficient producer-consumer model based on \myth. 
 We think a good producer-consumer model need to achieve two targets:
-(1) map worker can continue work when the buffer is full.
-(2) there is no too many overhead for dynamic memory manage.
-In this paper, we based on \myth design a efficient producer-consumer model for \myds.
-It not only pipeline Map and Reduce phase, but also without the limitation of the aforementioned issues. 
+(1) map worker can continue to working when the buffer is full.
+(2) there is no need for too much overhead to manage dynamic memory allocation.
+Based on \myth, an efficient producer-consumer model for \myds is designed in this subsection.
+It not only pipelines Map and Reduce phase, but also break through the limitation of issues  mentioned above. 
 %我们设计了一个生产者和消费者模型，用于map和reduc阶段的流水并行，有两个重要的数据结构：map worker的buffer池，reducer worker的全局buffer。每个map worker拥有一个私有的buffer池，当key-value产生后，通过partition函数插入到对应的buffer中。其中每个buffer对应一个reduce worker，reduce worker轮循的从各个map的buffer池中取key-value，并调用reduce函数进行计算；每个reduce拥有一个私有的全局buffer，用于存放reduce处理后得到的全局结果。
 
 \begin{figure}[!h!t]  
@@ -165,22 +161,25 @@ It not only pipeline Map and Reduce phase, but also without the limitation of th
 \end{figure}
 
 %如图所示，这个模型中有两个主要的数据结构：一个map私有buffer pool,其中的每个buffer用于存放发送给对应reduce的数据。一个channel用于mapper和reducer之间数据的传递。
-As figure\ref{fig:dmr:channel} shows, there are two major data structures:
-a local buffer for each mapper and a one to one
-channel used to communicate between mapper and reducer.
+As depicted in Figure \ref{fig:dmr:channel}, in our producer-consumer model, there are two major data structures:
+a local \code{buffer} for each map worker is designed to store the intermediate key-value pairs; 
+a one-to-one \code{shared-channel} in \myth is used to communicate between map and reduce workers.
+With the use of the one-to-one \code{shared-channel}, map worker sends the data to reducer without contenting with other map workers.
+When the \code{buffer} threshold is reached,
+the map worker will send data in \code{buffer} to the shared-channel and then set the \code{buffer} as empty.
+So the \code{buffer} will be reused in the hole Map phase, which saves overhead caused by dynamic memory allocation.
+If the \code{shared-channel} is full,  by triggering the \codet{extension} mechanism described in Section 3.3, map worker can continuously work without waiting for the reduce worker to remove the data from the shared-channel.
 
-Actually, there is a local buffer pool for each mapper.
-Each buffer in the pool is used to store key-value 
-which is send to a corresponded reducer.
-When an intermediate key-value pair is generated by the mapper,
-the partition function is used to index the corresponded buffer.
-Once the buffer is determined, 
-the mapper inserts the key-value into the buffer.
-When the buffer threshold is reached,
-the map worker will send data into the buffer to the channel by invoking \code{chan\_send}.
-Then the reduce worker can read record in the channel by \code{chan\_recv}.
-One reduce worker will get key-value from each channel by Round-Robin and 
-merge the key-value pairs to the global buffer.
+
+%When an intermediate key-value pair is generated by the mapper,
+%the partition function is used to index the corresponded buffer.
+%Once the buffer is determined, 
+%the mapper inserts the key-value into the buffer.
+%When the buffer threshold is reached,
+%the map worker will send data into the buffer to the channel by invoking \code{chan\_send}.
+%Then the reduce worker can read record in the channel by \code{chan\_recv}.
+%One reduce worker will get key-value from each channel by Round-Robin and 
+%merge the key-value pairs to the global buffer.
 
 %Figure.\ref{fig:dmr:pc-model} shows producer-conusmer model in our \myds.  
 %There is a one to one channel between map worker and reduce worker, 
@@ -201,14 +200,14 @@ merge the key-value pairs to the global buffer.
 
 
 %如同Phoenix, 默认情况下，buffer使用hash table来实现，事实上，在我们的模型中，使用array来实现具有更好的性能。下面的章节会详细解释原因。
-Defaultly, the buffer is a hash table as Phoenix.
-While this technique is more effective for the array buffer
-container than the hash buffer. 
-We will explain the advantage of array buffer in section 3.2.
-MRPhi\cite{lu2013mrphi} is also use producer-consumer model to 
-pipeline the map and reduce phases. 
-There are partitions queues for each reduce worker.
-While we don't use queues, mapping will be used in \myth(section 3.2).
+In fact, there is a local buffer pool for each map worker, in which each buffer is used to store key-value  pairs which will be sent to a corresponded reducer.
+%According to the partition function, the map worker can index which buffer to insert the key-value.
+When a key-value pair is generated by the map worker, the partition function is invoked to index the corresponded buffer.
+Once the buffer is determined, the map worker will insert the key-value pair into this buffer.
+In default, the buffer in \myds is a hash table which is similar to Phoenix's buffer.
+We also provide an array buffer implementation for \myds.
+And the experiment results show that the array buffer is more effective than the hash buffer. 
+We will detail the advantage of array buffer in Section 4.3.
 
 
 
@@ -241,7 +240,7 @@ While we don't use queues, mapping will be used in \myth(section 3.2).
 
 
 
-\subsubsection{Buffer Design and Optimize}
+\subsection{Buffer Design and Optimize}
 Research shows that the organization of MapReduce
 intermediate data is a challenge of design a  MapReduce library.
 The organization of the Map output is critical to the
