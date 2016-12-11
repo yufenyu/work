@@ -239,22 +239,22 @@ We also provide an array buffer implementation for \myds and we will detail the 
 
 
 \subsection{Buffer Design and Optimize}
-Mites\cite{mao2010metis} shows that the organization of intermediate data is critical to the performance of many MapReduce applications.
+Mites \cite{mao2010metis} shows that the organization of intermediate data is critical to the performance of many MapReduce applications.
 %since the entier body of intermediate data must be reorganized between the Map and Reduce phase:
 %Map produces data in the same order as the input, while Reduce must consume data grouped by key.\cite{mao2010metis}
 %And in a data center, it  
-In cluster, it is the network dominate the performance, but when on single multicore system the performance is dominated by the operations on the data structure that holds intermediate data.
-Defaultly, buffer in \myds is a hash table (Figure \ref{fig:dmr:hash-buffer}(a)), in which each element is a array of pointers to key arrays sorted by key.
+In cluster, it is the network bandwidth dominates the performance, but on multicore system the performance is dominated by the operations on the  data structure that holds intermediate data.
+Defaultly, buffer in \myds is a hash table (Figure \ref{fig:dmr:hash-buffer}(a)), in which each entry is a pointer, pointing to key array sorted by key.
 %\myds stores the key-value pairs in an array sorted by key.
-If the hash table have enough entries, collisions will be rare and the key arrays will be short,
-so that lookup and insert will have cost O(1), which is an attractive quality for workloads.
+If the hash table has enough entries, collisions will be rare and the key arrays will be short,
+so that lookup and inserting will cost O(1), which is an attractive quality for workloads.
 %The hash table's O(1) lookups make it particularly attractive for workloads with many repeated keys.
 
 
 \begin{figure}[!h!t]  
 	\centering
 	\includegraphics[width=0.5\textwidth]{eps/dmr_hash_buffer.eps}
-	\caption{Produce-Consume model in SMR}
+	\caption{hash buffer and gather}
 	\label{fig:dmr:hash-buffer}
 \end{figure}
 %the element is indexed by the hash value of the key.
@@ -265,21 +265,23 @@ so that lookup and insert will have cost O(1), which is an attractive quality fo
 %	to that pair based on the local container. This process is
 %	performed using a combiner.)}
 
-Our producer-consumer model based on \myth requires data sent to the channel should be a contiguous block of memory.
-Since key array in the hash buffer is scattered, which implies that all of the key arrays should be gathered together before sending it to the channel.
-We address this issue by copying scattered key-value pairs out of the hash buffer and inserting them into a new contiguous region (Figure \ref{fig:dmr:hash-buffer}(b)).
+Based on \myth, our producer-consumer model  requires that data sent to the channel should be a contiguous block of memory.
+Since the key arrays in the hash buffer is scattered, which implies that all of the key arrays should be gathered together before sending them to the channel.
+This issue can be solved by copying these scattered key arrays out  from the hash buffer and then inserting them into a new contiguous memory region (Figure \ref{fig:dmr:hash-buffer}(b)).
 This extra copy is unfortunate and time-consuming.
-Furthermore, hash buffer also requires frequent allocations and deallocations of memory for key and value along with the data structure creation and destruction.
+Furthermore, the hash buffer also requires frequent allocations and deallocations of memory for key and value, and simultaneously couples with the data structure creation and destruction, which will 
+negatively affects performance.
 
 %为了提高效率，避免group阶段产生的开销，我们试图改进buffer的hash实现，它不再采用原来 Phoenix 中的 hash 表的组织方式,而是采用更简单的 array,map worker 产生的 key-value只需追加到 array 中即可,无需排序。
 
 %The buffers are initially sized to a default value and then resized dynamically as needed.
-To avoid the time-consuming gather in hash buffer, we also implement a easy array buffer, and map worker could store its output by appending  key-value pairs to array buffer.
-The array buffer are initially sized to a default value and then reuse the buffer in the hole of Map phase.
-After sending the It will indicate that the buffer is empty at the end of a sending, but will not free the memory until all map jobs have finished.
-This avoids the costs of expensive memory allocation and deallocation, as well as the data structures construction.
-Above all, unlike hash buffer, array buffer is a contiguous block of memory, it not need gather before sending data in the buffer to the channel.
-The experiment results show that the array buffer is more effective than the hash buffer for applications that likely have abundant key-value, such as word\_count (Section 5).
+To avoid the time-consuming gather in hash buffer, we  implement an easy-to-use array buffer, and the map worker could store its output by appending  key-value pairs to array buffer.
+The array buffer is initially sized to a default value, and it can be reused in the hole of Map phase.
+%After sending the data of buffer, 
+The map worker will indicate the buffer as empty at the end of a sending, but will not free the memory until all map jobs have been finished.
+This manner avoids the expensive costs of memory allocation and deallocation as well as the data structures construction and destruction.
+Above all, unlike hash buffer, the array buffer is a contiguous memory block, it not have to gather key-value pairs before sending.
+The experiment results show that the array buffer is more effective than the hash buffer for some applications that likely have abundant key-value pairs, such as word\_count (Section 5).
 
 % For the array buffer implementation and no combiner in map phase,
 % Map just need to . Thus, this technique is more effective
