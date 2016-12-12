@@ -11,98 +11,181 @@ To reduce the effect of outliers, the lowest and the highest runtimes for each w
 
 %\subsection{ Performance Improvements Summary}
 \subsection{Benckmarks}
-\subsection{Performance of benchmarks}
+\subsection{Performance and Scalability}
 %描述benchmarks的特点，benchmarks的数据集等
-\begin{figure}[htpb]
+In this subsection, we measured the performance and scalability of \myds, and compare it with Phoenix.  
+Since there are many heap objects shared among threads in Phoenix, and it is sensitive to memory allocator.
+The memory allocator in glibc (i.e. ptmalloc\cite{gloger1997ptmalloc}), does not scale on multicore system. 
+Compared to ptmalloc\cite{gloger1997ptmalloc}, jemalloc provided improved performance and scalability\cite{evans2006jemalloc}. 
+Therefore, we evaluate performance and scalability of Phoenix with jemalloc and ptmalloc, respectively.
+
+\subsubsection{performance}
+Based on \myth, we implement the optimization of Phoenix in Section 4 and measured \myds performance by executing each benchmark, including histogram (\codet{hist}), linear\_regression (\codet{lr}), string\_match (\codet{sm}), wordcount (\codet{wc}), and pca. \redt{Why use these benchmark?}
+Table II describes the workloads and their input datasets. 
+\begin{figure}[!h!t]  
 	\centering
-	\subfigure[SMR versus Phoenix with ptmalloc]{
-		\includegraphics[width=0.45\textwidth]{eps/dmr_time_array.eps}
-		\label{fig:dmr:time:ptmalloc}
-	}
-	\subfigure[SMR versus Phoenix with jemalloc]{
-		\includegraphics[width=0.45\textwidth]{eps/dmr_time_jemalloc.eps}
-		\label{fig:dmr:time:jemalloc}
-	}
-	\caption{Execution time of SMR versus Phoenix}
-	\label{fig:time}
+	\includegraphics[width=0.45\textwidth]{eps/dmr_time_array.eps}
+	\caption{SMR versus Phoenix with ptmalloc}
+	\label{fig:smr:time:ptmalloc}
 \end{figure}
-{\bf Performance}
-Based on \myth, We implemented the optimization of Phoenix in Section 4 and measured \myds performance by executing each benchmark, including histogram (\codet{hist}), linear\_regression (\codet{lr}), string\_match (\codet{sm}), word\_count (\codet{wc}), and pca.
-\grayt{Table II describes the workloads and their input datasets. 
-	Compared to Phoenix, we significantly increased the performance.
-	However, some of the workloads still did not scale particularly well. 
-	We discuss their bottlenecks in detail in Section 5, 
-	but in the remainder of this section 
-	we first focus on the optimizations that turned out to be successful.
-}
+
+Figure\ref{fig:smr:time:ptmalloc} measures the relative speedup of \myds over Phoenix-ptmalloc. 
+As shown in the Figure \ref{fig:smr:time:ptmalloc}, For \codet{hist}, \code{wc} and \code{pca}, the optimized runtime of \myds leads to improvements across all core counts.
+For less then 8 cores, the average improvement was \redt{2.0x} and the variation across applications were rather small.
+For more then 8 cores, specially with 16 and 32 cores, the improvement were obvious, reaching \redt{10.x} in maximum and \redt{5.0x} on average.
+For sm, it has performed as well as Phoenix when the cores number less then 16, while it better than Phoenix when there is more cores.
+However, \myds runs worse than Phoenix on \code{lr} (about 0.8x).
+\begin{figure}[!h!t]  
+	\centering
+	\includegraphics[width=0.45\textwidth]{eps/dmr_time_jemalloc.eps}
+	\caption{SMR versus Phoenix with jemalloc}
+	\label{fig:smr:time:jemalloc}
+\end{figure}
+
+Figure\ref{fig:smr:time:jemalloc} measures the relative speedup of \myds over Phoenix-jemalloc. 
+We saw similar tendency when compared with Phoenix-jemalloc in Figure \ref{fig:smr:time:jemalloc}, while Phoenix with jemalloc has a better performacne.
+Compared to Phoenix, we significantly increased the performance.
+However, workloads, such as \code{lr} and \code{sm}, still did not scale particularly well. 
+The reason of worse performance on linear\_regression is that most of time is waste in \myds's initailization.
+We will evaluation overhead of initialization time in Section 5.4.
+We discuss their bottlenecks in detail in Section 5.4, but in the remainder of this section we first focus on the optimizations that turned out to be successful.
+\redt{need to explain why hist, wc, pca has good performance}
 
 
 
-We experimented with various allocators.
-Since there are many heap objects shared among threads
-in Phoenix, and it is sensitive to memory allocator.
-Compared to the libc sequential allocator ,  
-ptmalloc\cite{gloger1997ptmalloc},
-jemalloc{evans2006jemalloc} provided improved performance. 
-the memory allocator in glibc, does not scale on multicore system. 
-Therefore we evaluate the Phoenix with jemalloc and
-compare it  with \myds(Figure \label{fig:dmr:time:jemalloc}).
-Phoenix-jemalloc speedup Firgure \ref{fig:phoenix:speedup:jemalloc}
 
-However, nether allocator could successfully scaled up to 32cores.
+%\begin{figure}[htpb]
+%	\centering
+%	\subfigure[SMR versus Phoenix with ptmalloc]{
+%		\includegraphics[width=0.45\textwidth]{eps/dmr_time_array.eps}
+%		\label{fig:smr:time:ptmalloc}
+%	}
+%	\subfigure[SMR versus Phoenix with jemalloc]{
+%		\includegraphics[width=0.45\textwidth]{eps/dmr_time_jemalloc.eps}
+%		\label{fig:smr:time:jemalloc}
+%	}
+%	\caption{Execution time of SMR versus Phoenix}
+%	\label{fig:time}
+%\end{figure}
 
-Figure\ref{fig:dmr:time:ptmalloc} and \ref{fig:dmr:time:jemalloc}
-present the Execution time of \myds versus Phoenix.
-%虽然jemalloc的性能表现要比ptmalloc好，但实验结果都显示
-\myds matches or outperforms Phoenix on 4 out of 5 workloads,
-but runs worse than Phoenix only on linear\_regression.
-For hist, pca and word\_count, 
-\myds outperforms Phoenix betwen xxx and xxx faster.
-The reason of worse performance on linear\_regression 
-is that most of time is waste in \myds's initailization.
-We will evaluation overhead of initialization time in section\ref{}.
+
+%However, nether allocator could successfully scaled up to 32cores.
+%
+%Figure\ref{fig:dmr:time:ptmalloc} and \ref{fig:dmr:time:jemalloc}
+%present the Execution time of \myds versus Phoenix.
+%%虽然jemalloc的性能表现要比ptmalloc好，但实验结果都显示
+%\myds matches or outperforms Phoenix on 4 out of 5 workloads,
+%but runs worse than Phoenix only on linear\_regression.
+%For hist, pca and word\_count, 
+%\myds outperforms Phoenix betwen xxx and xxx faster.
+
 %从实验的结果可以看出，hist, wc, pca，SMR的性能较好，sm相当，lr中SMR的性能表现较差
 
 
 
-\begin{figure*}[htpb]
-\centering
-  \subfigure[]{
-   \includegraphics[width=0.15\textwidth]{eps/smr_scala_hist.eps}
-   \label{fig:dmr:time:ptmalloc}
-   }
-  \subfigure[]{
-	\includegraphics[width=0.15\textwidth]{eps/smr_scala_lr.eps}
-	\label{fig:dmr:time:ptmalloc}
-}
-  \subfigure[]{
-	\includegraphics[width=0.15\textwidth]{eps/smr_scala_sm.eps}
-	\label{fig:dmr:time:ptmalloc}
-}
-  \subfigure[]{
-	\includegraphics[width=0.15\textwidth]{eps/smr_scala_wc.eps}
-	\label{fig:dmr:time:ptmalloc}
-}
-  \subfigure[]{
-	\includegraphics[width=0.15\textwidth]{eps/smr_scala_pca.eps}
-	\label{fig:dmr:time:ptmalloc}
-}
-  \caption{A comparison of the scalability of \myds with that of Phoenix}
-   \label{fig:scalability}
-\end{figure*}
-{\bf Scalability}
+%\begin{figure*}[htpb]
+%\centering
+%  \subfigure[]{
+%   \includegraphics[width=0.15\textwidth]{eps/smr_scala_hist.eps}
+%   \label{fig:dmr:time:ptmalloc}
+%   }
+%  \subfigure[]{
+%	\includegraphics[width=0.15\textwidth]{eps/smr_scala_lr.eps}
+%	\label{fig:dmr:time:ptmalloc}
+%}
+%  \subfigure[]{
+%	\includegraphics[width=0.15\textwidth]{eps/smr_scala_sm.eps}
+%	\label{fig:dmr:time:ptmalloc}
+%}
+%  \subfigure[]{
+%	\includegraphics[width=0.15\textwidth]{eps/smr_scala_wc.eps}
+%	\label{fig:dmr:time:ptmalloc}
+%}
+%  \subfigure[]{
+%	\includegraphics[width=0.15\textwidth]{eps/smr_scala_pca.eps}
+%	\label{fig:dmr:time:ptmalloc}
+%}
+%  \caption{A comparison of the scalability of \myds with that of Phoenix}
+%   \label{fig:scalability}
+%\end{figure*}
+
+\subsubsection{Scalability}
+
+%\begin{figure}[!h!t]  
+%	\centering
+%	\includegraphics[width=0.45\textwidth]{eps/phoenix_speedup_jemalloc.eps}
+%	\caption{speedup of Phoenix-jemalloc}
+%	\label{fig:phoenix:speedup:jemalloc}
+%\end{figure}
+\begin{figure}[htpb]
+	\centering
+	\subfigure[speedup of Phoenix-jemalloc]{
+		\includegraphics[width=0.45\textwidth]{eps/phoenix_speedup_jemalloc.eps}
+		\label{fig:phoenix:speedup:jemalloc}
+	}
+	\subfigure[\_\_tickect\_spin\_lock execution time percent of Phoenix-jemalloc]{
+		\includegraphics[width=0.45\textwidth]{eps/phoenix_spinlock_jemalloc.eps}
+		\label{fig:phoenix:spinlock:jemalloc}
+	}
+	\caption{scalability of Phoenix}
+	\label{fig:phoenix:scalability}
+\end{figure}
+
+Figure\ref{fig:phoenix:speedup:jemalloc} shows the speedup of Phoenix with jemalloc.
+As the number of cores increase (from 1 to 8), the execution time decreases for all cases. 
+While For 16 to 32 cores, Phoenix execution times keep decreasing with the increase of the number of cores.
+When the number of dependent processes increases above the
+number of cores, serious contending lock takes place,
+and as a result execution time will be drastically increased.
+As the number of threads increases from 32 to 33, 
+there is a significant increase in execution time owing to Opteron’s NUMA architecture with
+point-to-point communication links.
+
+\begin{figure}[htpb]
+	\centering
+	\subfigure[speedup of \myds]{
+		\includegraphics[width=0.45\textwidth]{eps/dmr_speedup.eps}
+		\label{fig:smr:speedup}
+	}
+	\subfigure[Execution time percent of \_\_tickect\_spin\_lock in \myds]{
+		\includegraphics[width=0.45\textwidth]{eps/dmr_spinlock.eps}
+		\label{fig:smr:spinlock}
+	}
+	\caption{scalability of Phoenix}
+	\label{fig:smr:scalability}
+\end{figure}
+
+Figure\ref{fig:smr:scalability} summarizes the scalability results for \myds.
+Specially, workloads \codet{string\_match}, \codet{word\_count} and \codet{pca} scaled up to 32 cores.
+And the performance of hist, wc, sm are scale linearly with the number of cores.
+However, \codet{linear\_regression} and \codet{histgram} still did not scale particularly. We discuss their bottlenecks in detail in subsection 5.4.
+%\begin{figure}[!h!t]  
+%	\centering
+%	\includegraphics[width=0.45\textwidth]{eps/dmr_speedup.eps}
+%	\caption{speedup of Phoenix}
+%	\label{fig:scalability}
+%\end{figure}
 
 
-We say a waiting thread is the thread which is waiting for shared
-data that produced by another thread. If using semaphore for
-synchronization, a waiting thread will be blocked and enlisted
-on the waiting queue by the OS scheduler. If using spinlock
-for synchronization, a waiting thread will do busy wait, i.e.
-spinning in a while loop. Embedded software applications
-that using semaphore to handle the synchronization could
-result in performa+nce overkill, since it involves system calls
-translated into thousands of CPU instructions [1]; while using
-spinlock have problem of long busy-waiting time.
+System Contention is evaluated using the execution time percent of \_\_ticket\_spin\_lock. 
+Evaluation indicates (Figure\ref{fig:smr:spinlock}) that the locking overhead can be significantly reduced to less than 1\% of total runtime on 32 cores
+%\begin{figure}[!h!t]  
+%	\centering
+%	\includegraphics[width=0.45\textwidth]{eps/dmr_spinlock.eps}
+%	\caption{tickect\_spin\_lock execution time percent of Phoenix}
+%	\label{fig:smr:spinlock}
+%\end{figure}
+
+%We say a waiting thread is the thread which is waiting for shared
+%data that produced by another thread. If using semaphore for
+%synchronization, a waiting thread will be blocked and enlisted
+%on the waiting queue by the OS scheduler. If using spinlock
+%for synchronization, a waiting thread will do busy wait, i.e.
+%spinning in a while loop. Embedded software applications
+%that using semaphore to handle the synchronization could
+%result in performance overkill, since it involves system calls
+%translated into thousands of CPU instructions [1]; while using
+%spinlock have problem of long busy-waiting time.
 
 When a running thread tries to read shared data,
 it must do busy wait until it has exhausted its time-slice
@@ -112,120 +195,107 @@ shared data.
 
 
 
-System performance is evaluated using
-instructions per cycle (IPC). Higher IPC means
-better performance.
-Figure \ref{fig:perf:ipc} shows the IPC of Phoenix first increases 
-and then decreases as more threads are run on multi-core system.
+%System performance is evaluated using
+%instructions per cycle (IPC). Higher IPC means
+%better performance.
+%Figure\ref{fig:perf:ipc} shows the IPC of Phoenix first increases 
+%and then decreases as more threads are run on multi-core system.
 
 
-{\color{red}\myds }
-Evaluation indicates that
-the locking overhead can be significantly reduced to less
-than 1% of total runtime on 32 cores
 
 
 
 
 %分析lr性能差的原因
 
-The performance of hist, wc, sm are scale linearly with the number of cores.
+
 
 
 \subsection{ Impact of buffer Optimizations}
-As the number of threads increases (from 1 to 8), the
-execution time decreases for all cases. For 9 to 32 threads,
-both Phoenix and \myds execution times keep decreasing with
-the increase of the number of threads
-When the number of dependent processes increases above the
-number of cores, 
-%context switching takes place, 
-serious contending lock takes place,
-and as a resultexecution time will be drastically increased. 
-As the number of threads increases from 32 to 33, 
-there is a significant increase
-in execution time owing to Opteron’s NUMA architecture with
-point-to-point communication links.
+As described in Section 4.3, 
+\begin{figure}[!h!t]  
+	\centering
+	\includegraphics[width=0.45\textwidth]{eps/smr_diff_buffer.eps}
+	\caption{the diffrent implementation of buffer}
+	\label{fig:env:init}
+\end{figure}
 
-On the workstation, the \myds implementation is 13\%-
-95\% better than Phoenix implementation (peaking at 8
-threads).
+%As the number of threads increases (from 1 to 8), the
+%execution times for both Pthread/C and MPI programs decrease
+%for both workstation and supercomputer. For 9 threads to 32
+%threads, Pthread/C and MPI execution times changes slightly
+%on workstation. However for 9 threads to 32 threads, both
+%Pthread/C and MPI execution times keep decreasing (in most
+%cases) with the increase in number of threads on the
+%supercomputer node. This is because we use 8 cores in the
+%workstation while we use 32 cores in the supercomputer node.
+%Execution time for large number of threads (9 to 33 and
+%beyond) remains almost the same for the workstation because
+%of no communication overhead. Results (see Figure 4) also
+%show that MPI execution time on supercomputer increases
+%significantly when the number of threads is increased from 32
+%to 33 and beyond; but Pthread/C execution time on
+%supercomputer remains almost unchanged. This is due to the
+%communication overhead among the cores (32 cores in a
+%supercomputer node) when using MPI message passing.
 
-As the number of threads increases (from 1 to 8), the
-execution times for both Pthread/C and MPI programs decrease
-for both workstation and supercomputer. For 9 threads to 32
-threads, Pthread/C and MPI execution times changes slightly
-on workstation. However for 9 threads to 32 threads, both
-Pthread/C and MPI execution times keep decreasing (in most
-cases) with the increase in number of threads on the
-supercomputer node. This is because we use 8 cores in the
-workstation while we use 32 cores in the supercomputer node.
-Execution time for large number of threads (9 to 33 and
-beyond) remains almost the same for the workstation because
-of no communication overhead. Results (see Figure 4) also
-show that MPI execution time on supercomputer increases
-significantly when the number of threads is increased from 32
-to 33 and beyond; but Pthread/C execution time on
-supercomputer remains almost unchanged. This is due to the
-communication overhead among the cores (32 cores in a
-supercomputer node) when using MPI message passing.
-
-From the
-experimental results, it is observed that both computer systems
-yield better performance using Pthread than MPI (in most
-cases). Pthread has the advantage over MPI for sharing
-memory and distributing tasks among lightweight threads
-instead of processes. The performance of the Pthread
-implementation on the supercomputer is the best, 30%-6.7x
-better than the Open MPI implementation on the
-supercomputer node.
+From the experimental results, it is observed that benchmarks yield better performance using \myds than Phoenix (in most cases). 
+\myds has the advantage over Phoenix for pipelining map and reduce phases and separating address space by using \myth thread instead of shared memory Pthread. 
+The performance of the \codet{histgram} implementation on Phoenix is the best, 30\%-95\%x better than the Phoenix implementation on the our 32-cores system.
 
 \subsection{ Challenges and Limitations}
-\begin{figure}[htpb]
-\centering
-  \subfigure[Execution time and initialization time on histgram]{
-   \includegraphics[width=0.45\textwidth]{eps/dmr_hist_init.eps}
-   \label{fig:dmr:hist:init}
-   }
-  \subfigure[Execution time and initialization time on linear\_regression]{
-   \includegraphics[width=0.45\textwidth]{eps/dmr_lr_init.eps}
-   \label{fig:dmr:lr:init}
-  }
-  \caption{Initialize time with \myds}
-   \label{fig:init}
-\end{figure}
-Figure\ref{fig:init} shows the initialization time of \myds and Phoenix.
-The time of \myds used is range 0.25s to  0.35s, 
-while it is just about 0.001s in Phoenix.
-{\color{red} why the initialization time is so large in \myds}
-
 Although we were able to significantly improve the scalability of \myds, 
-workloads histogram, linear regression still did not scale up to 32cores. 
+workloads \codet{histogram}, \codet{linear\_regression} still did not scale up to 32cores (as shown in Figure\ref{fig:smr:speedup}). 
 %We used /usr/bin/time to assess where the execution time was
-We used stub to assess where the execution time was
-being spent. 
-Figure \ref{fig:dmr:hist:init} shows the result with exec time
-defined as mapreduce actual execution time and init time as the initialization time before workers starting work. 
+We collect each phase time information to find out where the execution time was being spent by using stub. 
+The results denote that workloads on \myds waste more execution time in initialization phase, compared to Phoenix.
+Figure\ref{fig:env:init} shows the initialization time of \myds and Phoenix.
+Exactly, the initialized time of \myds is range 0.25s to 0.35s, while it is just about 0.001s in Phoenix.
+\begin{figure}[!h!t]  
+	\centering
+	\includegraphics[width=0.5\textwidth]{eps/env_init.eps}
+	\caption{initialization time of \myds and Phoenix}
+	\label{fig:env:init}
+\end{figure}
+
+
+%解释为什么smr中的初始化时间会这么大
+For multicore MapReduce library, most of initialized time is occupied in creating map and reduce threads.
+Compared to thread in Phoenix, which based on Pthread, creating thread will spend more time in \myds because of more resource need to be allocated.
+In addition, it will take more time for creating \codet{shared-channel} and setting up it.
+From the experimental results (Figure\ref{fig:env:init}(b)), we observed that initialized time is small variation for different benchmarks and in different cores count, except for \codet{pca}.
+Since there are two times mapreduce computation in \codet{pca}, which lead to two times initialization, it take more time than others benchmarks.
+  
+
+\begin{figure}[htpb]
+	\centering
+	\subfigure[Execution time and initialization time on histgram]{
+		\includegraphics[width=0.45\textwidth]{eps/dmr_hist_init.eps}
+		\label{fig:dmr:hist:init}
+	}
+	\subfigure[Execution time and initialization time on linear\_regression]{
+		\includegraphics[width=0.45\textwidth]{eps/dmr_lr_init.eps}
+		\label{fig:dmr:lr:init}
+	}
+	\caption{Initialize time with \myds}
+	\label{fig:init}
+\end{figure}
+
+
+%这种较大较大的初始化对performance和scalability造成的影响
+
+
+Figure \ref{fig:dmr:hist:init} shows the result with exec time defined as mapreduce actual execution time and init time as the initialization time before workers starting work. 
 It was clear that the 2 non-scaling workloads shared two common trends. 
-First, the init time ratio increased with increasing number of threads, 
-dominating the total execution time at high thread count. 
+First, the total execution time of both \codet{histgram} and \codet{linear\_regression} less than 2.7s for all cores, which if far less than other benchmarks. 
+Second, As the increasing number of cores, the portion of actual computation time (execution time) significantly decreased.
+However, the initialization time is almost constant, which cause the init time ratio increase and dominate the total execution time at high cores count. 
+As a result, the total execution time of \codet{linear\_regression} on Phoenix will less than on \myds.
 %Second, the portion of actual computation time assumed by kernel code (sys /
 %effective) significantly increased as we went beyond the single
 %chip boundary.
 %Second, both total execution time are short, While the portion of init time is 
 
-\begin{figure}[htpb]
-\centering
-  \subfigure[]{
-   \includegraphics[width=0.4\textwidth]{eps/dmr_init.eps}
-   \label{fig:dmr:time:jemalloc}
-  }
-  \caption{Initialize time of SMR and Phoenix}
-   \label{fig:time}
-\end{figure}
-
-\redt{\myds initialization time is uesd to create threads, channel.}
-%\myds的大部分时间用于了thread的创建，channel的分配，因此它的开销远大于Phoenix初始化的开销
 
 
 
