@@ -6,35 +6,22 @@ Then the limitation of Phoenix in the aspect of performance is analyzed.
 %讨论Phoenix的局限与不足
 
 \subsection{MapReduce Programing Model}
-Inspired  by funnctional languages, the MapReduce programming model is 
-proposed for data intensive computation in cluster environment.
-Its simple programming interface requires programmer 
-to  define only two primitives: map and reduce.
-The map function is applied on the input data and 
-produces a list of intermediate key and value pairs.
-The reduce function is applied on all intermediate
-pairs and  groups all pairs with the same key to a single
-key-value pair. 
-In order to save networking bandwidth and reduce memory consumption, 
-the combine function, an optional operation, can aggregate the key and value pairs locally in Map phase.
+Inspired  by funnctional languages, the MapReduce programming model is proposed for data intensive computation in cluster environment.
+Its simple programming interface requires programmer to  define only two primitives: map and reduce.
+The map function is applied on the input data and produces a set of intermediate key-value pairs.
+The reduce function is applied on all intermediate pairs and  groups them with the same key to a single key-value pair. 
+In order to save networking bandwidth and reduce memory consumption, the combine function, an optional operation, can aggregate the key-value pairs locally in Map phase.
 
 
-The charm of MapReduce is that, 
-for applications that can fit that form, 
-it hides all the concurrency details from  programmer. 
-For example, 
-one can count the number of occurrences for each word in a text file. 
-The map function emits a $\langle word, 1\rangle$ pair for each word in document, 
-and the reduce function counts all occurrences of a word as the output. 
-The combine function is similar to the reduce function, 
-but only processes a partial set of key-value pairs in Map phase.
+The charm of MapReduce is that, for applications that can adapt, it hides all the concurrency details from  programmer. 
+For example, one can count the number of occurrences for each word in a text file. 
+The map function emits a $\langle word, 1\rangle$ pair for each word in document, and the reduce function counts all occurrences of a word as the output. 
+The combine function is similar to the reduce function, but only processes a partial set of key-value pairs in Map phase.
 
 
 \subsection{Phoenix}
 Phoenix is an implementation of MapReduce for multicore  and multiprocessor systems using Pthreads \cite{}.
-It shows MapReduce is a promising model,  and the applications written with MapReduce model
-have competitive scalability and performance in comparison to those
-written with Pthreads \cite{ranger2007phoenix};
+It shows MapReduce mode is a promising model,  and the applications written with MapReduce have competitive scalability and performance in comparison to those written with Pthreads\cite{ranger2007phoenix};
 Phoenix stores the intermediate key-value pairs produced 
 by the map workers in a global matrix (Figure \ref{fig:phoenix:intermediate}). 
 Each map and reduce workers can write or read this global matrix. 
