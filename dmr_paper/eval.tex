@@ -1,46 +1,43 @@
 \section{Evaluation}
-We evaluate \myds and Phoenix on 
-a 32-core Intel 4× Xeon E7-4820 system equipped with 128GB of RAM. 
+This section presents the experimental results for Ostrich on an Intel 32-cores multicore machine. 
+We mainly compare the performance of \myds with Phoenix.
+
+We evaluate \myds and Phoenix on a 32-core Intel 4× Xeon E7-4820 system equipped with 128GB of RAM. 
 The operating system is Ubuntu 12.04 with kernel 3.2.0 and glibc-2.15.
 Benchmarks were built as 64-bit executables with gcc -O3.
-We logically disable CPU cores using Linux’s CPU hotplug mechanism, 
-which allows to disable or enable individual CPU cores 
-by writing “0” (or “1”) to 
-a special pseudo file (/sys/devices/system/cpu/cpuN/online), 
-and the total number of threads was matched to the number of CPU cores enabled.
+We logically disable CPU cores using Linux’s CPU hotplug mechanism, which allows to disable or enable individual CPU cores by writing “0” (or “1”) to a special pseudo file (/sys/devices/system/cpu/cpuN/online), and the total number of threads was matched to the number of CPU cores enabled.
 Each workload is executed 10 times. 
-To reduce the effect of outliers, 
-the lowest and the highest runtimes for each workload are discarded, 
-and thus each result is the average of the remaining 8 runs.
+To reduce the effect of outliers, the lowest and the highest runtimes for each workload are discarded, and thus each result is the average of the remaining 8 runs.
 
 %\subsection{ Performance Improvements Summary}
+\subsection{Benckmarks}
 \subsection{Performance of benchmarks}
 %描述benchmarks的特点，benchmarks的数据集等
-
-\begin{figure*}[htpb]
-\centering
-  \subfigure[SMR versus Phoenix with ptmalloc]{
-   \includegraphics[width=0.45\textwidth]{eps/dmr_time_array.eps}
-   \label{fig:dmr:time:ptmalloc}
-  }
-  \subfigure[SMR versus Phoenix with jemalloc]{
-   \includegraphics[width=0.45\textwidth]{eps/dmr_time_jemalloc.eps}
-   \label{fig:dmr:time:jemalloc}
-  }
-  \caption{Execution time of SMR versus Phoenix}
-   \label{fig:time}
-\end{figure*}
-
+\begin{figure}[htpb]
+	\centering
+	\subfigure[SMR versus Phoenix with ptmalloc]{
+		\includegraphics[width=0.45\textwidth]{eps/dmr_time_array.eps}
+		\label{fig:dmr:time:ptmalloc}
+	}
+	\subfigure[SMR versus Phoenix with jemalloc]{
+		\includegraphics[width=0.45\textwidth]{eps/dmr_time_jemalloc.eps}
+		\label{fig:dmr:time:jemalloc}
+	}
+	\caption{Execution time of SMR versus Phoenix}
+	\label{fig:time}
+\end{figure}
 {\bf Performance}
-We measured \myds performance by executing the applications
-included in the original release. 
+Based on \myth, We implemented the optimization of Phoenix in Section 4 and measured \myds performance by executing each benchmark, including histogram (\codet{hist}), linear\_regression (\codet{lr}), string\_match (\codet{sm}), word\_count (\codet{wc}), and pca.
 \grayt{Table II describes the workloads and their input datasets. 
-Compared to Phoenix, we significantly increased the performance.
-However, some of the workloads still did not scale particularly well. 
-We discuss their bottlenecks in detail in Section 5, 
-but in the remainder of this section 
-we first focus on the optimizations that turned out to be successful.
+	Compared to Phoenix, we significantly increased the performance.
+	However, some of the workloads still did not scale particularly well. 
+	We discuss their bottlenecks in detail in Section 5, 
+	but in the remainder of this section 
+	we first focus on the optimizations that turned out to be successful.
 }
+
+
+
 We experimented with various allocators.
 Since there are many heap objects shared among threads
 in Phoenix, and it is sensitive to memory allocator.
@@ -71,14 +68,26 @@ We will evaluation overhead of initialization time in section\ref{}.
 \begin{figure*}[htpb]
 \centering
   \subfigure[]{
-   \includegraphics[width=0.45\textwidth]{eps/dmr_spinlock.eps}
+   \includegraphics[width=0.15\textwidth]{eps/smr_scala_hist.eps}
    \label{fig:dmr:time:ptmalloc}
    }
   \subfigure[]{
-   \includegraphics[width=0.45\textwidth]{eps/dmr_speedup.eps}
-   \label{fig:dmr:time:jemalloc}
-  }
-  \caption{ Application speedup with the \myds}
+	\includegraphics[width=0.15\textwidth]{eps/smr_scala_lr.eps}
+	\label{fig:dmr:time:ptmalloc}
+}
+  \subfigure[]{
+	\includegraphics[width=0.15\textwidth]{eps/smr_scala_sm.eps}
+	\label{fig:dmr:time:ptmalloc}
+}
+  \subfigure[]{
+	\includegraphics[width=0.15\textwidth]{eps/smr_scala_wc.eps}
+	\label{fig:dmr:time:ptmalloc}
+}
+  \subfigure[]{
+	\includegraphics[width=0.15\textwidth]{eps/smr_scala_pca.eps}
+	\label{fig:dmr:time:ptmalloc}
+}
+  \caption{A comparison of the scalability of \myds with that of Phoenix}
    \label{fig:scalability}
 \end{figure*}
 {\bf Scalability}

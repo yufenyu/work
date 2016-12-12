@@ -7,14 +7,11 @@ Finally, the detail design and implementation of \myth will be given.
 
 \subsection{Scalability of Phoenix}
 %描述Phoenix 的 pool scalability
-Phoenix uses shared-memory multiple threads to implement parallelism,
-and programs written in Phoenix will start as many threads as the system's cores.
+Phoenix uses shared-memory multiple threads to implement parallelism, and programs written in Phoenix will start as many threads as the system's cores.
 Ideally, adding more threads and cores to the runtime would bring about a linear decrease in execution time.
 %However, the parallel scalability of Phoenix is not ideal.
 However, Phoenix can not scale as well as expected.
-As indicated in Figure \ref{fig:phoenix:speedup}, 
-when the system exceeds its scalability limitation, 
-adding more cores might scale negatively.
+As indicated in Figure \ref{fig:phoenix:speedup}, when the system exceeds its scalability limitation, adding more cores might scale negatively.
 That means the time of completing a workload will increase if there are more cores in the system. 
 % In general, the parallel scalability of Phoenix is poor.
 
@@ -36,17 +33,19 @@ That means the time of completing a workload will increase if there are more cor
 %Phoenix中采取了划分和barrier两种策略，以避免多个map和reduce对同一个matrix竞争，
 %然而实验的结果却显示在8核以上，依然有很激烈的竞争。
 %函数的调用图显示，ticket\_spin\_lock几乎全部是由pagefault引起的。
-In order to analyze the limited scalability behavior, 
-Perf\cite{} is exploited to collect execution time  percent information of hot function. 
-We note that the map function is the hottest function with less cores, 
-while \_\_ticket\_spin\_lock will become the hottest function with more cores.
+In order to analyze the limited scalability behavior, Linux perf is exploited to collect execution time information of hot function. 
+We note that the map function is the hottest function with less cores, while \_\_ticket\_spin\_lock will become the hottest function with more cores.
+\redt{
+\_\_ticket\_spin\_lock is a type of spinlock which is caused by lock contention in Linux kernel.
+In order to specially explore the impact of spinlock, we collect the execution time percent of \_\_ticket\_spin\_lock on each benchmark from 1 to 32 cores by Linux perf.
+}
 %However, the structure data shared by multiple threads in Linux kernel can cause the lock contention, which will degrade the scalability of Phoenix.
 %To alleviate the overhead of lock, Phoenix has took two strategies to avoid multiple threads contending the share area.
-Figure \ref{fig:phoenix:spinlock} shows the execution time percent of 
-\_\_ticket\_spin\_lock on each benchmark. 
-We observe that the cost of spinlock increases quickly as the cores number cross a specific value (ie. 8).
+%Figure \ref{fig:phoenix:spinlock} shows the execution time percent of \_\_ticket\_spin\_lock on each benchmark. 
+As the result shows in Figure \ref{fig:phoenix:spinlock}, the cost of spinlock increases quickly as the cores number cross a specific value (ie. 8).
 %And in 32 cores, the \_\_ticket\_spin\_lock needs largest execution time for hist, lr, wc, sw.
-Specially, hist with 16 and 32 cores shows that \_\_ticket\_spin\_lock is the function that has largest execution time percents of 40.15\%  and 71.25\%, respectively. 
+%Specially, hist with 16 and 32 cores shows that \_\_ticket\_spin\_lock is the function that has largest execution time percents of 40.15\%  and 71.25\%, respectively. 
+Specially, for hist with 16 and 32 cores, \_\_ticket\_spin\_lock is the function that has largest execution time percents of 40.15\%  and 71.25\%, respectively. 
 
 \redt{\_\_ticket\_spin\_lock is a type of spinlock which is caused by lock contention in Linux kernel.
 	In Linux 3.2 kernel, \_\_ticket\_spin\_lock is used to ....
@@ -100,15 +99,14 @@ That means pagefaults won't scale well on large numbers of cores:
 
 
 The mmap() system call is utilized to read in input data. 
-Once the user passes the pointer of the mmaped region to runtime as an argument, 
-multiple map threads will concurrently cause pagefault in the input data when they invoke map functions.
-All these pagefaults need to access the unique mmap\_sem semaphore, which is local to a process address space. As a result, multiple threads concurrently pagefaults will casue contention to the single semaphore.
-
+Once the user passes the pointer of the mmap() region to runtime as an argument, multiple map threads will concurrently cause pagefault in the input data when they invoke map functions.
+All of these pagefaults need to access the unique mmap\_sem semaphore, which is local to a process address space. 
+As a result, multiple threads concurrently pagefaults will casue contention to the single semaphore.
 %All these pagefaults will contend the unique mmap\_sem semaphore
 %which is used for protecting the address space shared by multiple threads.
 One reason why Linux uses this single semaphore on the address space is 
 that it needs a red-black tree to guarantee $O$(log$n$)
-lookup time when a process has many mapped memory regions \cite{linux}. 
+lookup time when a process has many mmap memory regions \cite{linux}. 
 %Since the red-black tree requires re-balance when a new memory region is inserted, 
 %Linux protect the entire data structure with a single semaphore.
 %when the process is using multiple threads, 
@@ -155,12 +153,15 @@ which will lead to the parallel scalability degradation on the benchmarks.
 
 Our goal is to enable the pagefaults to be scalable  for many cores.
 There are some ways to achieve this target. 
-For example, in \cite{Clements2012Scalable},  a scalable operation system is proposed by using ....;
+\redt{For example, in \cite{Clements2012Scalable},  a scalable operation system is proposed by using ....;
 in \cite{},  the authors think process has a better scalability than thread since the process needs not to share the address space with the other processes.
+}
 %applications use processes instead of threads can avoid a single shared address space
 However, modifying operation system is impracticable and employing the process rather than the thread will make sharing become complicated. 
-In order to provide a practicable and simple solution, a novel programming model \myth (Scalable thread) with better scalability,  supporting scalable MapReduce (\myds) compatibly, will be presented in this paper.
-Therefore, a key problem to be solved is that how to enable threads to eliminate contention on the per-process read/write semaphore when multiple threads concurrently run pagefaults.
+In order to provide a practicable and simple solution, a key problem to be solved is that how to enable threads to eliminate contention on the per-process read/write semaphore when multiple threads concurrently run pagefaults.
+
+
+
 %This requires addressing a basic problem, how allow pagefaults to eliminate on the per-process read/write semaphore, when multiple threads run concurrently.
 %At the same time, we aim at providing an easy-to-use programming abstraction to support scalable MapReduce.
 %The proposed \myth can support scalable MapReduce (\myds).
@@ -172,11 +173,13 @@ Therefore, a key problem to be solved is that how to enable threads to eliminate
 %With this target, we propose a new thread programming model \myth(Scalable thread).
 %We propose a new thread programming model to support efficient pipeline parallelism.
 %To address this issue and achieve our goal, we propose a new thread programming model \myth(Scalable thread), which is written in C.
+To address the problem and achieve our goal, we propose a novel thread programming model \myth (Scalable thread) with better scalability, supporting scalable MapReduce (\myds) compatibly, will be presented in this subsection.
 There are two key points in the design of \myth.
-Firstly, to avoid the contention on the single semaphore, we confine the threads in \myth to run in separate memory spaces.
+Firstly, to avoid the contention on the single semaphore, we confine the threads in \myth to run in separate memory spaces. 
+It means that threads in \myth have their local mm\_struct and eliminate the contention of the single semaphore.
 Secondly, when using the separate spaces, communication will be challenging since
 the threads in \myth can not directly communicate with the other threads like thread based on share space.
-So, we give a shared-channel for the threads to communicate with the other threads in \myth.
+So, we give a shared-channel for the threads to communicate with the others in \myth. 
 %Threads in Pthreads share the address space of the process that created it, 
 %while threads in \myth have their own address space,
 %meaning each thread has a mm\_struct.
@@ -196,14 +199,15 @@ So, we give a shared-channel for the threads to communicate with the other threa
 %mapreduce中是如何使用这个简易的模型进行编程和实现的，这个模型潜在的开销是什么
 Figure \ref{fig:api:thread} lists the main functions of managing threads and channels in \myth.
 In the case of \myds, at initial stage, the master thread invokes \codet{thread\_alloc} to allocate map threads and reduce threads, and then creates the shared-channel  between each pair of map  and reduce threads by invoking \codet{chan\_alloc}.
-To set up the shared-channel, the master invokes \codet{chan\_setprod} and \codet{chan\_setcons} to set the map and reduce threads as producers and consumers, respectively. 
+%To set up the shared-channel, the master invokes \codet{chan\_setprod} and \codet{chan\_setcons} to set the map and reduce threads as producers and consumers, respectively. 
+The master invokes \codet{chan\_setprod} and \codet{chan\_setcons} to set the map and reduce threads as producers and consumers for the shared-channel, respectively.
 The producer sends messages to the shared-channel, and the consumer receives the messages from it,
 which is a typical producer-consumer model (we will detail it in Section 4). 
 Finally, the master starts all threads to work by invoking \codet{thread\_start}.
 
 Although using \myth can decrease the overhead of contention,
 it also takes extra overhead in comparison to Phoneix. The experiments demonstrate that the extra overhead 
-is concentrate in the initial stage (we will analyze this overhead in Section 5). 
+is concentrate in the initial stage (we will analyze this overhead in Section 5.3). 
 
 
 \subsection{Design of the Channel}
