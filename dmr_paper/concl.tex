@@ -1,19 +1,20 @@
 \section{Conclusions And Furture Work}
 \label{sec:concl}
-We have presented \myds,
-a scalable iterative MapReduce model, 
-to support efficient iterative processing.
+Phoenix shows MapReduce model is a promising model and approach to use multicore resource for multicore and multiprocessor systmes.
+However, it has limitations in terms of scalability and performance due to its manners of design and implementation.
 
-Our evaluation further shows the scalability and reliablity of \myds
-for iterative processing.
-As to poor performance on multicast across processors,
-our future work will provide NUMA-aware scalable iterative processing.
-And supporting online-MapReduce.
-\iffalse
-\section*{Acknowledgment} 
-{\small
-This work was supported in part by 
-the National High Technology Research and Development Program
-of China (863 Program) grant (No.2012AA010901),
-and the National Natural Science Foundation of China Grant (No.61170018).}
-\fi
+In this paper, we analyzed scalability and performance limitations of Phoenix and provide practicable solution.
+we provide a novel thread programming model for support scalable mapreduce, i.e., \myds. 
+We have presented \myds, a scalable MapReduce model for multicore system.
+%to support efficient iterative processing.
+We significantly improved the scalability over Phoenix, achieving an average speedup improvement of 2.5x, and a peek speedup improvement of 10x.
+Our evaluation further shows the scalability and reliablity of \myds for iterative processing.
+As to poor performance on multicast across processors, our future work will provide scalable iterative processing.
+%\iffalse
+%\section*{Acknowledgment} 
+%{\small
+%This work was supported in part by 
+%the National High Technology Research and Development Program
+%of China (863 Program) grant (No.2012AA010901),
+%and the National Natural Science Foundation of China Grant (No.61170018).}
+%\fi

@@ -21,7 +21,7 @@ The combine function is similar to the reduce function, but only processes a par
 
 \subsection{Phoenix}
 Phoenix is an implementation of MapReduce for multicore  and multiprocessor systems using Pthreads \cite{}.
-It shows MapReduce mode is a promising model,  and the applications written with MapReduce have competitive scalability and performance in comparison to those written with Pthreads\cite{ranger2007phoenix};
+It shows MapReduce model is a promising model, and the applications written with MapReduce have competitive scalability and performance in comparison to those written with Pthreads\cite{ranger2007phoenix};
 Phoenix stores the intermediate key-value pairs produced 
 by the map workers in a global matrix (Figure \ref{fig:phoenix:intermediate}). 
 Each map and reduce workers can write or read this global matrix. 
@@ -41,7 +41,7 @@ two strategies must be carried out to avoid lock contention costs.
     \label{fig:phoenix:intermediate}
 \end{figure}
 
-%Though Phoenix has successfully demonstrated the feasibility
+%Phoenix demonstrates tha applications that fit the MapReduce model can perform competitively with parallel code using Pthreads.
 Though Phoenix has demonstrated promising feasibility when running  applications on multicore, it has limitations in terms of scalability and performance due to its manners of design and implementation.
 The detail analyses are described as follows:
 

@@ -10,7 +10,7 @@ Each workload is executed 10 times.
 To reduce the effect of outliers, the lowest and the highest runtimes for each workload are discarded, and thus each result is the average of the remaining 8 runs.
 
 %\subsection{ Performance Improvements Summary}
-\subsection{Benckmarks}
+%\subsection{Benckmarks}
 \subsection{Performance and Scalability}
 %描述benchmarks的特点，benchmarks的数据集等
 In this subsection, we measured the performance and scalability of \myds, and compare it with Phoenix.  
@@ -19,8 +19,8 @@ The memory allocator in glibc (i.e. ptmalloc\cite{gloger1997ptmalloc}), does not
 Compared to ptmalloc\cite{gloger1997ptmalloc}, jemalloc provided improved performance and scalability\cite{evans2006jemalloc}. 
 Therefore, we evaluate performance and scalability of Phoenix with jemalloc and ptmalloc, respectively.
 
-\subsubsection{performance}
-Based on \myth, we implement the optimization of Phoenix in Section 4 and measured \myds performance by executing each benchmark, including histogram (\codet{hist}), linear\_regression (\codet{lr}), string\_match (\codet{sm}), wordcount (\codet{wc}), and pca. \redt{Why use these benchmark?}
+\subsubsection{Performance}
+Based on \myth, we implemented the optimization of Phoenix in Section 4 and measured \myds performance by executing each benchmark, including histogram (\codet{hist}), linear\_regression (\codet{lr}), string\_match (\codet{sm}), wordcount (\codet{wc}), and pca. \redt{Why use these benchmark?}
 Table II describes the workloads and their input datasets. 
 \begin{figure}[!h!t]  
 	\centering
@@ -43,16 +43,13 @@ However, \myds runs worse than Phoenix on \code{lr} (about 0.8x).
 \end{figure}
 
 Figure\ref{fig:smr:time:jemalloc} measures the relative speedup of \myds over Phoenix-jemalloc. 
-We saw similar tendency when compared with Phoenix-jemalloc in Figure \ref{fig:smr:time:jemalloc}, while Phoenix with jemalloc has a better performacne.
+We saw similar tendency when compared with Phoenix-jemalloc in Figure\ref{fig:smr:time:jemalloc}, while Phoenix with jemalloc has a better performacne.
 Compared to Phoenix, we significantly increased the performance.
 However, workloads, such as \code{lr} and \code{sm}, still did not scale particularly well. 
 The reason of worse performance on linear\_regression is that most of time is waste in \myds's initailization.
 We will evaluation overhead of initialization time in Section 5.4.
 We discuss their bottlenecks in detail in Section 5.4, but in the remainder of this section we first focus on the optimizations that turned out to be successful.
 \redt{need to explain why hist, wc, pca has good performance}
-
-
-
 
 %\begin{figure}[htpb]
 %	\centering
@@ -110,63 +107,85 @@ We discuss their bottlenecks in detail in Section 5.4, but in the remainder of t
 %\end{figure*}
 
 \subsubsection{Scalability}
-
-%\begin{figure}[!h!t]  
-%	\centering
-%	\includegraphics[width=0.45\textwidth]{eps/phoenix_speedup_jemalloc.eps}
-%	\caption{speedup of Phoenix-jemalloc}
-%	\label{fig:phoenix:speedup:jemalloc}
-%\end{figure}
-\begin{figure}[htpb]
+%Phoenix-jemalloc版本scalability存在的问题
+\begin{figure}[!h!t]  
 	\centering
-	\subfigure[speedup of Phoenix-jemalloc]{
-		\includegraphics[width=0.45\textwidth]{eps/phoenix_speedup_jemalloc.eps}
-		\label{fig:phoenix:speedup:jemalloc}
-	}
-	\subfigure[\_\_tickect\_spin\_lock execution time percent of Phoenix-jemalloc]{
-		\includegraphics[width=0.45\textwidth]{eps/phoenix_spinlock_jemalloc.eps}
-		\label{fig:phoenix:spinlock:jemalloc}
-	}
-	\caption{scalability of Phoenix}
-	\label{fig:phoenix:scalability}
+	\includegraphics[width=0.45\textwidth]{eps/phoenix_speedup_jemalloc.eps}
+	\caption{speedup of Phoenix-jemalloc}
+	\label{fig:phoenix:speedup:jemalloc}
 \end{figure}
-
+Since Phoenix is sensitive to memory allocator, we evaluate its scalability with jemalloc, good scalability allocator.
 Figure\ref{fig:phoenix:speedup:jemalloc} shows the speedup of Phoenix with jemalloc.
-As the number of cores increase (from 1 to 8), the execution time decreases for all cases. 
-While For 16 to 32 cores, Phoenix execution times keep decreasing with the increase of the number of cores.
-When the number of dependent processes increases above the
-number of cores, serious contending lock takes place,
-and as a result execution time will be drastically increased.
-As the number of threads increases from 32 to 33, 
-there is a significant increase in execution time owing to Opteron’s NUMA architecture with
-point-to-point communication links.
-
-\begin{figure}[htpb]
+%\begin{figure}[htpb]
+%	\centering
+%	\subfigure[speedup of Phoenix-jemalloc]{
+%		\includegraphics[width=0.45\textwidth]{eps/phoenix_speedup_jemalloc.eps}
+%		\label{fig:phoenix:speedup:jemalloc}
+%	}
+%	\subfigure[\_\_tickect\_spin\_lock execution time percent of Phoenix-jemalloc]{
+%		\includegraphics[width=0.45\textwidth]{eps/phoenix_spinlock_jemalloc.eps}
+%		\label{fig:phoenix:spinlock:jemalloc}
+%	}
+%	\caption{scalability of Phoenix-jemalloc}
+%	\label{fig:phoenix:scalability}
+%\end{figure}
+As the number of cores increase (from 1 to 8), the performance of Phoenix increase for all cases, i.e., the execution time decreasing. 
+While For 16 to 32 cores, Phoenix performance keep decreasing with the increase of the number of cores.
+\begin{figure}[!h!t]  
 	\centering
-	\subfigure[speedup of \myds]{
-		\includegraphics[width=0.45\textwidth]{eps/dmr_speedup.eps}
-		\label{fig:smr:speedup}
-	}
-	\subfigure[Execution time percent of \_\_tickect\_spin\_lock in \myds]{
-		\includegraphics[width=0.45\textwidth]{eps/dmr_spinlock.eps}
-		\label{fig:smr:spinlock}
-	}
-	\caption{scalability of Phoenix}
-	\label{fig:smr:scalability}
+	\includegraphics[width=0.45\textwidth]{eps/phoenix_spinlock_jemalloc.eps}
+	\caption{speedup of Phoenix-jemalloc}
+	\label{fig:phoenix:spinlock:jemalloc}
+\end{figure}
+At the same time, we collect \_\_ticket\_spin\_lock execution time percent by Linux perf to peek the contention in Linux kernal.
+The result shows in Figure\ref{fig:phoenix:spinlock:jemalloc}.
+We note serious contending lock takes place when increase the number of cores over 8 and as a result execution time will be drastically increased.
+%When the number of dependent processes increases above the
+%number of cores, serious contending lock takes place,
+%and as a result execution time will be drastically increased.
+%As the number of threads increases from 32 to 33, 
+%there is a significant increase in execution time owing to .
+
+At low cores, increasing .. resulted in speedup.
+However, as more cores were added, the benefit was reversed due to the increased time spent in ticket\_spin\_lock. 
+
+%通过使用sthread，我们能够提升scalability，降低tickect_spin_lock的开销，但是lr和hist两个应用程序的scalability比较差，将在section 5.4分析原因
+%\begin{figure}[htpb]
+%	\centering
+%	\subfigure[speedup of \myds]{
+%		\includegraphics[width=0.45\textwidth]{eps/dmr_speedup.eps}
+%		\label{fig:smr:speedup}
+%	}
+%	\subfigure[Execution time percent of \_\_tickect\_spin\_lock in \myds]{
+%		\includegraphics[width=0.45\textwidth]{eps/dmr_spinlock.eps}
+%		\label{fig:smr:spinlock}
+%	}
+%	\caption{scalability of \myds}
+%	\label{fig:smr:scalability}
+%\end{figure}
+
+Although with the scalable memory allocator, Phoenix can not scale up to 16cores.
+ 
+\begin{figure}[!h!t]  
+	\centering
+	\includegraphics[width=0.45\textwidth]{eps/dmr_spinlock.eps}
+	\caption{Execution time percent of \_\_tickect\_spin\_lock in \myds}
+	\label{fig:smr:spinlock}
 \end{figure}
 
-Figure\ref{fig:smr:scalability} summarizes the scalability results for \myds.
+Figure\ref{fig:smr:speedup} summarizes the scalability results for \myds.
 Specially, workloads \codet{string\_match}, \codet{word\_count} and \codet{pca} scaled up to 32 cores.
 And the performance of hist, wc, sm are scale linearly with the number of cores.
-However, \codet{linear\_regression} and \codet{histgram} still did not scale particularly. We discuss their bottlenecks in detail in subsection 5.4.
-%\begin{figure}[!h!t]  
-%	\centering
-%	\includegraphics[width=0.45\textwidth]{eps/dmr_speedup.eps}
-%	\caption{speedup of Phoenix}
-%	\label{fig:scalability}
-%\end{figure}
+However, \codet{linear\_regression} and \codet{histgram} still did not scale particularly. 
+We will discuss their bottlenecks in detail in subsection 5.4.
+\begin{figure}[!h!t]  
+	\centering
+	\includegraphics[width=0.45\textwidth]{eps/dmr_speedup.eps}
+	\caption{speedup of Phoenix}
+	\label{fig:smr:speedup}
+\end{figure}
 
-
+In our \myds, using \myth thread was sufficient to reduce the contention in Linux kernel. 
 System Contention is evaluated using the execution time percent of \_\_ticket\_spin\_lock. 
 Evaluation indicates (Figure\ref{fig:smr:spinlock}) that the locking overhead can be significantly reduced to less than 1\% of total runtime on 32 cores
 %\begin{figure}[!h!t]  
@@ -187,10 +206,10 @@ Evaluation indicates (Figure\ref{fig:smr:spinlock}) that the locking overhead ca
 %translated into thousands of CPU instructions [1]; while using
 %spinlock have problem of long busy-waiting time.
 
-When a running thread tries to read shared data,
-it must do busy wait until it has exhausted its time-slice
-or until another thread has withdrawn the occupation on the
-shared data. 
+%When a running thread tries to read shared data,
+%it must do busy wait until it has exhausted its time-slice
+%or until another thread has withdrawn the occupation on the
+%shared data. 
 
 
 
@@ -202,22 +221,25 @@ shared data.
 %and then decreases as more threads are run on multi-core system.
 
 
-
-
-
-
-%分析lr性能差的原因
-
-
-
+To summarize, \myds demonstrated its performance and scalability for applications such as \codet{word\_count}, \codet{histgram} and \codet{pca}.
+For applications such as \codet{linear\_regression}, \myds does not show its superiority, which we will analyze this result in detail in Section 5.4.
 
 \subsection{ Impact of buffer Optimizations}
-As described in Section 4.3, 
+In Section 4.3, we discussed the organization of intermediate data is critical to the performance of many MapReduce applications.
+Using the default hash buffer, need to gather the scatter key arrays together before sending them to the \codet{shared-channel}, which is time wasting.
+we addressed this issue by providing a array implementation of buffer. 
+Especially, array buffer, which is a continuous memory space, avoided buffer reallocation and coping.
+However, not all the workloads benefited from the optimization.
+
+
+
+
+%As described in Section 4.3, we provide two implementation of the local buffer in Map phase, i.e, hash buffer or array buffer.  
 \begin{figure}[!h!t]  
 	\centering
 	\includegraphics[width=0.45\textwidth]{eps/smr_diff_buffer.eps}
 	\caption{the diffrent implementation of buffer}
-	\label{fig:env:init}
+	\label{fig:smr:diff:buffer}
 \end{figure}
 
 %As the number of threads increases (from 1 to 8), the
@@ -238,6 +260,9 @@ As described in Section 4.3,
 %supercomputer remains almost unchanged. This is due to the
 %communication overhead among the cores (32 cores in a
 %supercomputer node) when using MPI message passing.
+Figure\ref{fig:smr:diff:buffer} shows the 
+From the Figure, it can be seen that although cases such as \codet{word\_count} and \codet{histgram} used array buffer has better performance, other benchmarks, e.g., \codet{linear\_regression}, \codet{string\_match} and \codet{pca}, did not.
+So, for workloads that did generate a large number of key-value pairs, gather operation in hash buffer waster more time, as a result, array buffer will be better.
 
 From the experimental results, it is observed that benchmarks yield better performance using \myds than Phoenix (in most cases). 
 \myds has the advantage over Phoenix for pipelining map and reduce phases and separating address space by using \myth thread instead of shared memory Pthread. 

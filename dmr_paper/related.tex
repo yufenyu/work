@@ -1,74 +1,34 @@
 \section{Related Work}
 %两个方面：（1）面向多核的mapreduce的研究:Phoenix, mutis, MRPhi (2)linux scalability的问题
 \label{sec:rel}
-%在写这一部分的时候，需要将全部收集的论文重新看一边，并修改论文中的设计部分，最后，写好abstract, introduction, related work.
+%MapReduce以及已有的MapReduce库
+MapReduce is a popular distributed framework for massive-scale parallel data analysis developed by Google.
+There are many existing implementation of MapReduce which adopt on the basic architecture and  programming model of originally Google's MapReduce.
+Hadoop\cite{White2010Hadoop}, an open source implementation of MapReduce, has been adopted enterprises including Yahoo! and Facebook. 
+Map-Reduce-Merge\cite{Yang2007MapReducemerge} is proposed for supporting joins of heterogeneous datasets directly by adding a Merge phase.
+Dryad\cite{isard2007dryad} generalizes MapReduce into an acyclic dataflow graph.
 
-Our work is related to the research in programming models for
-data-parallel applications, nested data parallelism and multicore re-
-lated research. We briefly discuss the most related work in turn.
-\subsection{MapReduce programming model}
-MapReduce is a popular distributed framework
-for massive-scale parallel data analysis.
-There are many existing implementation of MapReduce 
-which adopt on the basic architecture and 
-programming model of originally Google's MapReduce, 
-such as Hadoop\cite{}, Dryad\cite{isard2007dryad}.
+The Phoenix, a MapReduce libray implementation on multicore platform, is the most relevant work to \myds. 
+Phoenix demonstrates tha applications that fit the MapReduce model can perform competitively with parallel code using Pthreads.
+\myds differs from Phoenix mainly on two point:
+Phoenix need barrier between Map and Reduce phase, while \myds brokes barrier to speed up computing;
+And \myds exploits \myth thread to implement map and reduce workers, which results in fewer contention in Linux kernel caused by a shared address space.
 
-The Phoenix MapReduce libray
-is the most relevant work to \myds. 
-Phoenix demostrate that MapReduce is a promising parallel programming
-models in muliticore and multiprocess systems.
-It creates a thread pool by Pthreads
-and can schedule tasks dynamically to support itrative applications.
-\myds differs from Phoenix mainly on that 
-Phoenix need barrier between iterative MapReduce,
-while \myds brokes barrier to speed up computing.
-
-%虽然我们没有与mites, Tilt-MapReduce进行对比，但通过我们的研究，只要这些库使用pthread进行编程，那么就会存在scalability较差的问题。
-Tilt-MapReduce\cite{chen2010tiled}
-This paper argued that the environmental differences between
-clusters and multicore open new design spaces and optimization
-opportunities to improve performance of MapReduce on multicore.
-Based on the observation, this paper proposed Tiled-MapReduce,
-that uses the “tiling strategy” to partition a large MapReduce job
-into a number of small sub-jobs and handles the sub-jobs itera-
-tively. This paper also explored several optimizations otherwise im-
-possible for MapReduce, to improve the memory, cache and CPU
-efficiency.
-
+%多核环境下的mapreduce库，虽然我们没有与mites, Tilt-MapReduce进行对比，但通过我们的研究，只要这些库使用pthread进行编程，那么就会存在scalability较差的问题。
+Tilt-MapReduce\cite{chen2010tiled} uses the “tiling strategy” to partition a large MapReduce job into a number of small sub-jobs and handles the sub-jobs iteratively.
+MRPhi\cite{lu2013mrphi} is a MapReduce framework optimized for the Intel Xeon Phi coprocessor.
+It pipeline the map and reduce phases to better utilize the hardware resource by producer-consumer model, which has some limitations.
+Mao et al.\cite{mao2010metis} consider that the organization of the intermediate values produced by Map invocations and consumed by Reduce invocations is central to achieving good performance on multicore processors. 
+They present a optimized MapReduce library (i.e., Metis) using an efficient data structure consisting of a hash table per map thread with a b+tree in each hash entry.
 Although, we don't compare \myds with mites, Tilt-MapReduce,
 our research shows that if the MapReduce library implemented by Pthreads, there will be problem of scalability.
 
-Metis\cite{mao2010metis},The paper’s main insight is that the organiza-
-tion of the intermediate values produced by Map invocations and consumed by Reduce invocations is central
-to achieving good performance on multicore processors.
-Metis stores these intermediate values using an efficient
-data structure consisting of a hash table per Map thread
-with a b+tree in each hash entry. As a result, Metis can
-achieve better performance than Phoenix on MapReduce
-applications that interact with the library frequently (e.g.,
-applications with many keys).
 
-MRPhi\cite{} is a multicore mapreduce.
-
-\subsection{Scalability of multicore}
-A multicore operating system, named Corey\cite{boyd2008corey}, proposes three
-new abstractions (address ranges, shares and kernel cores), to scale
-a MapReduce application (i.e., Word Revert Index) running on Corey.
-The work in Corey is orthogonal to Ostrich. The abstractions in
-Corey, if available in commodity OSes, could further improve the
-efficiency of Ostrich due to the reduced time spent in the OS kernel.
-	
-An Analysis of Linux Scalability to Many Cores \cite{Boyd2010An},
-This paper analyzes the scaling behavior of a traditional
-operating system (Linux 2.6.35-rc5) on a 48-core com-
-puter with a set of applications that are designed for par-
-allel execution and use kernel services. We find that we
-can remove most kernel bottlenecks that the applications
-stress by modifying the applications or kernel slightly.
-
-RadixVM\cite{Clements2013RadixVM}RadixVM, a new virtual memory design
+Serveral paper have looked at scaling systems on mulitcore system.
+Boyd-Wickizer et al. aimed at designing a scalable operating system for multicore, named Corey\cite{boyd2008corey}, and presents three new abstractions (address ranges, shares and kernel cores), to scale a MapReduce application running on Corey.
+RadixVM\cite{Clements2013RadixVM}, a new virtual memory design
 that allows VM-intensive multithreaded applications to scale
 with the number of cores.
+others ....
 
 
