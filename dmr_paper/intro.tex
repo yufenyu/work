@@ -7,17 +7,17 @@
 
 %目前的现状，需求
 As the prevalence of multicore chips, it is foreseeable that tens to hundreds (even thousands) of cores on a single chip will appear in the near future\cite{Borkar2007core}.
-While utilizing multicore sources is still challenging because of the difficulties of parallel programming.
-Specifically, Traditional parallel programming techniques require the programmer to manually manage synchronization, load balancing and locality, which is often error-prone (e.g., races and deadlocks) or requires detailed understanding of the underlying hardware.
-An alternative approach is to rely on a runtime system for concurrency management. 
+However, utilizing multicore sources is still challenging because of the difficulties of parallel programming.
+Specifically, traditional parallel programming techniques require the programmer to manually manage synchronization, load balancing and locality, and understand the detail  of underlying hardware, which is error-prone (e.g., races and deadlocks). %requests the programmer to understand the detail  of underlying hardware.
+An alternative approach is dependent on a runtime system for concurrency management. 
 
 %MapReduce以及Phoenix
-MapReduce\cite{dean2004mapreduce}, for instance, is a promising programming model for clusters to perform large dataset processing in a simple and efficient way.
+MapReduce\cite{dean2004mapreduce} is a promising programming model for clusters to perform large scaled datasets processing in a simple and efficient way.
 In most cases, programmers only need to implement two functions: 
-map functions which process the input data and produce key-value pairs; and reduce function which is used to aggregate values with the same key.
+map function which processes the input data and produce key-value pairs, and reduce function which is used to aggregate values with the same key.
 %Therefore, the programmer dose no need to control synchronization, schedule tasks and fault tolerance manually.
 While initially MapReduce is implemented on clusters, Ranger et al. have implemented a MapReduce library for multicore and multiprocess system, and demonstrated the feasibility of running MapReduce applications on shared memory multicore machines with Phoenix\cite{ranger2007phoenix}.
-After that, Phoenix is heavily optimized by Yoo et al\cite{yoo2009phoenix2} aiming at obtaining better scalability on shared-memory system.
+After that, Phoenix is heavily optimized by Yoo et al\cite{yoo2009phoenix2} to obtain better scalability on shared-memory system.
 Other libraries such as Metis\cite{mao2010metis} , Tiled-mapreduce\cite{chen2010tiled} and MRPhi\cite{lu2013mrphi} attempt to improve performance of Phoenix from various aspects.
 
 
@@ -41,14 +41,14 @@ Other libraries such as Metis\cite{mao2010metis} , Tiled-mapreduce\cite{chen2010
 
 %Due to scale operating systems fo lager-scale, shared-memory systems.
 %Phoenix存在的问题
-Phoenix exploits shared-memory threads (i.e., Pthread library) to implement parallelism and the runtime binds each worker to a thread.
-Ideally, adding more threads and cores to the runtime would bring about a linear decrease in execution time.
-However, we find that the optimized Phoenix\cite{yoo2009phoenix2} significantly underperformed on an 4-chip, 32-cores system running x86 Linux.
-Figure\ref{fig:phoenix:speedup} shows the speedup of the optimized Phoenix runtime, which is measured on our 32-core system (in Section \ref{sec:eval}). 
-We observed that despite the Phoenix runtime is able to process these applications in parallel, none of them scales beyond 16 cores and most of them actually slow down when the number of cores more than 8.
+Phoenix exploits shared-memory threads (i.e., Pthread library) to implement parallelism, and the runtime binds each worker to a thread.
+Ideally, adding more threads and cores to the system will bring a linear decreasing in execution time.
+However, we note that the optimized Phoenix \cite{yoo2009phoenix2}  scales worse on an 4-chip, 32-cores system running x86 Linux.
+Figure \ref{fig:phoenix:speedup} shows the speedup of the optimized Phoenix runtime, which is measured on our 32-core system (the detail of this system will be given in Section \ref{sec:eval}). 
+We observe that despite the Phoenix runtime is able to process these applications in parallel, none of them scales well beyond 16 cores and most of them actually degrade when the number of cores exceeds 8.
 %While the optimized Phoenix\cite{yoo2009phoenix2} performed well on a 256-thread NUMA system, we find that the runtime significantly underperformed on an 4-chip, 32-cores system running x86 Linux.
 %This work focuses on improving Phoenix in the term of scalability and performance from a new perspective.
-Due to applications with Phoenix is shared-memory multithreading, all threads of an application need to share a single address space, which will lead to contend on the single lock \cite{Clements2013RadixVM}.
+Since the Phoenix runtime implements multithreadig based on shared-memory Pthreads, all threads of the runtime have to share a single address space, which will lead to contention on the single lock \cite{Clements2013RadixVM}.
 As a result, the scalability of applications with Phoenix will be limited. 
 %Multithreaded applications on many-core processors can be bottlenecked by contended locks inside the operating system’s virtual memory system.
 % where all threads of an application share a single address space, shared address space has a cost, which will limit the scalability of these applications.
@@ -95,18 +95,19 @@ As a result, the scalability of applications with Phoenix will be limited.
 %为了改进Phoenix存在的这些问题，我们提出了一个scalable mapreduce库，它即具有较好的性能，且具有较好的scalability.
 
 %To remedy the above problems, we propose a modified MapReduce architecture in which Map and Reduce phase are pipelined to improve the performance, while preserving the programming interfaces of previous MapReduce frameworks.
-To remedy the above problems, we propose a modified MapReduce architecture, while preserving the programming interfaces of previous MapReduce frameworks.
-Firstly, we propose a scalable thread libray(\myth).
-Then based on \myth, this paper presents a scalable MapReduce model for multicore, \myds(Scalable MapReduce), that can efficiently support MapReduce applications.
+To remedy the problems mentioned above, we design a modified MapReduce framework with preserving the programming interfaces of previous MapReduce.
+Firstly, we propose a scalable thread libray (\myth).
+Then based on \myth, this paper presents a scalable MapReduce model for multicore, \myds(Scalable MapReduce), which can efficiently support MapReduce applications.
 %\myds reserves the similar Phoenix programing interfaces as well.
-Specifically, this paper make the following contributions:
+The main contributions of this paper are concluded as follows:
+%Specifically, this paper make the following contributions:
 \begin{itemize}
-  \item We identify the important roadblocks that limit scaling of the Phoenix runtime on shared-memory systems. Specifically, we find that shared address space for multiple threads becomes a crucial issue at large thread counts.
+  \item We analyze the important roadblocks that limit scalability of the Phoenix runtime on shared-memory systems. Specifically, we find that shared address space for multiple threads will be a crucial issue at multicore system.
   
-  \item We develop a scalable thread library, \myth, in which threads run in separate memory space to avoid the contention on the single shared semaphore. Furthermore, \myth provides the \codet{shared-channel} for the thread to communicate with others. 
+  \item We develop a scalable thread library, \myth, in which threads run in  the separated memory space to avoid the contention on the shared space. Furthermore, \myth provides the \codet{shared-channel} for the threads to communicate with others. 
 
-  \item Base on \myth, we propose a modified MapReduce \myds, a scalable MapReduce model.
-  \myds pipelines the Map and Reduce phase by employing a novel producer-consumer model, in which producer not need to wait when the buffer is full. 
+  \item Base on \myth, we propose a scalable MapReduce model, \myds.
+  \myds pipelines the Map and Reduce phase by adapting a new producer-consumer model, in which producer does not have to wait when the buffer is full. 
 
   \item We implement a prototype of \myth and demonstrate the effectiveness of \myds runtime on a 32-cores system. 
 %  The optimized runtime exhibits significantly improved scalability over the Phoenix; For 32cores, the new runtime improves speedup up to maximum 5.0x.
@@ -114,12 +115,12 @@ Specifically, this paper make the following contributions:
 
 %介绍文章的组织结构
 In order to ground our discussion, we present an overview of MapReduce framework and Phoenix in Section \ref{sec:back}. 
-We then develop the design of \myth in Section \ref{sec:design}, keeping the focus on the implementation mechanism of extention. 
+We then develop the design of \myth in Section \ref{sec:design}, focusing  on implementing mechanism of extension. 
 %In Section 4 we show how \myth can support
 %\myds and illustrate
 %the potential benefits of that producer-consumer model for MapReduce framework.
-In Section \ref{sec:runtime} we describe our support for pipelineing map and reduce,and illustrate the potential benefits of that producer-consumer model for MapReduce framework. 
-We present initial performance results in Section \ref{sec:eval}. 
+In Section \ref{sec:runtime}, we describe our support for pipelineing map and reduce, and illustrate the potential benefits of the producer-consumer model for MapReduce framework.
+We give initial performance results in Section \ref{sec:eval}. 
 Related and future work are covered in Sections \ref{sec:rela} and \ref{sec:concl}.
 
 %This paper is organized as follows. In section 2, we review
