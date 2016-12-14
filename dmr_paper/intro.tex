@@ -44,12 +44,14 @@ Other libraries such as Metis\cite{mao2010metis} , Tiled-mapreduce\cite{chen2010
 Phoenix exploits shared-memory threads (i.e., Pthread library) to implement parallelism and the runtime binds each worker to a thread.
 Ideally, adding more threads and cores to the runtime would bring about a linear decrease in execution time.
 However, we find that the optimized Phoenix\cite{yoo2009phoenix2} significantly underperformed on an 4-chip, 32-cores system running x86 Linux.
-Figure\ref{fig:phoenix:speedup} shows the speedup of the optimized Phoenix runtime, which is measured on our 32-core system (in Section\ref{sec:eval}). 
+Figure\ref{fig:phoenix:speedup} shows the speedup of the optimized Phoenix runtime, which is measured on our 32-core system (in Section \ref{sec:eval}). 
 We observed that despite the Phoenix runtime is able to process these applications in parallel, none of them scales beyond 16 cores and most of them actually slow down when the number of cores more than 8.
 %While the optimized Phoenix\cite{yoo2009phoenix2} performed well on a 256-thread NUMA system, we find that the runtime significantly underperformed on an 4-chip, 32-cores system running x86 Linux.
 %This work focuses on improving Phoenix in the term of scalability and performance from a new perspective.
-Multithreaded applications on many-core processors can be bottlenecked by contended locks inside the operating system’s virtual memory system\cite{Clements2013RadixVM}.
-Due to parallel programming model is shared-memory multithreading, where all threads of an application share a single address space, shared address space has a cost, which will limit the scalability of these applications.
+Due to applications with Phoenix is shared-memory multithreading, all threads of an application need to share a single address space, which will lead to contend on the single lock \cite{Clements2013RadixVM}.
+As a result, the scalability of applications with Phoenix will be limited. 
+%Multithreaded applications on many-core processors can be bottlenecked by contended locks inside the operating system’s virtual memory system.
+% where all threads of an application share a single address space, shared address space has a cost, which will limit the scalability of these applications.
  
 
 %However, the benefits of adding more cores will be reduced due to overhead associated with the additional threads----the contention of lock.
@@ -103,23 +105,22 @@ Specifically, this paper make the following contributions:
   
   \item We develop a scalable thread library, \myth, in which threads run in separate memory space to avoid the contention on the single shared semaphore. Furthermore, \myth provides the \codet{shared-channel} for the thread to communicate with others. 
 
-  \item Base on \myth, we propose \myds, a scalable MapReduce model, 
+  \item Base on \myth, we propose a modified MapReduce \myds, a scalable MapReduce model.
+  \myds pipelines the Map and Reduce phase by employing a novel producer-consumer model, in which producer not need to wait when the buffer is full. 
 
-  \item We demonstrate the approach with the \myds runtime using a 32-cores system. The optimized runtime exhibits significantly improved scalability over the Phoenix; For 32cores, the new runtime improves speedup up to maximum 5.0x.
+  \item We implement a prototype of \myth and demonstrate the effectiveness of \myds runtime on a 32-cores system. 
+%  The optimized runtime exhibits significantly improved scalability over the Phoenix; For 32cores, the new runtime improves speedup up to maximum 5.0x.
 \end{itemize}
 
 %介绍文章的组织结构
-In order to ground our discussion, we present an overview
-of MapReduce architecture and Phoenix in Section 2. 
-We then develop the design of \myth in Section 3, 
-keeping the focus on the implementation mechanism of extention. 
+In order to ground our discussion, we present an overview of MapReduce framework and Phoenix in Section \ref{sec:back}. 
+We then develop the design of \myth in Section \ref{sec:design}, keeping the focus on the implementation mechanism of extention. 
 %In Section 4 we show how \myth can support
 %\myds and illustrate
 %the potential benefits of that producer-consumer model for MapReduce framework.
-In Section 4 we describe our support for pipelineing map and reduce,
-and illustrate the potential benefits of that producer-consumer model for MapReduce framework. 
-We present initial performance results in Section 5. 
-Related and future work are covered in Sections 6 and 7.
+In Section \ref{sec:runtime} we describe our support for pipelineing map and reduce,and illustrate the potential benefits of that producer-consumer model for MapReduce framework. 
+We present initial performance results in Section \ref{sec:eval}. 
+Related and future work are covered in Sections \ref{sec:rela} and \ref{sec:concl}.
 
 %This paper is organized as follows. In section 2, we review
 %the background. Section 3 briefly describes the problems.
