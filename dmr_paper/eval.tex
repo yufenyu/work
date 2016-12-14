@@ -1,4 +1,5 @@
 \section{Evaluation}
+\label{sec:eval}
 This section presents the experimental results for Ostrich on an Intel 32-cores multicore machine. 
 We mainly compare the performance of \myds with Phoenix.
 
@@ -114,6 +115,13 @@ We discuss their bottlenecks in detail in Section 5.4, but in the remainder of t
 	\caption{speedup of Phoenix-jemalloc}
 	\label{fig:phoenix:speedup:jemalloc}
 \end{figure}
+
+%As shown in this figure \ref{fig:phoenix:speedup}, 
+%when using no more than eight cores, the Phoenix scales well on hist ... ;
+%when using no more than 16 cores, the Phoenix scales well on sm and le.
+
+%For linear\_regression (lr) and string\_match (sm),  using 16 or more  cores leads to speedup degradation.
+
 Since Phoenix is sensitive to memory allocator, we evaluate its scalability with jemalloc, good scalability allocator.
 Figure\ref{fig:phoenix:speedup:jemalloc} shows the speedup of Phoenix with jemalloc.
 %\begin{figure}[htpb]
@@ -129,8 +137,15 @@ Figure\ref{fig:phoenix:speedup:jemalloc} shows the speedup of Phoenix with jemal
 %	\caption{scalability of Phoenix-jemalloc}
 %	\label{fig:phoenix:scalability}
 %\end{figure}
-As the number of cores increase (from 1 to 8), the performance of Phoenix increase for all cases, i.e., the execution time decreasing. 
-While For 16 to 32 cores, Phoenix performance keep decreasing with the increase of the number of cores.
+the Phoenix scales well on histgram (hist), wordcount (wc) and pca when the number of core is less than 8.
+As for the linear\_regression (lr) and string\_match (sm), 
+Phoenix performs well with no more than 16 cores.
+However, when core number is more than  8, 
+the speedup of Phoenix  on hist,  wc and pca is degraded.
+For lr and sm, the speedup is degraded when cores is greater than 16.
+
+%As the number of cores increase (from 1 to 8), the performance of Phoenix increase for all cases, i.e., the execution time decreasing. 
+%While For 16 to 32 cores, Phoenix performance keep decreasing with the increase of the number of cores.
 \begin{figure}[!h!t]  
 	\centering
 	\includegraphics[width=0.45\textwidth]{eps/phoenix_spinlock_jemalloc.eps}

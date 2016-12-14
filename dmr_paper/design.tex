@@ -147,15 +147,15 @@ which will lead to the parallel scalability degradation on the benchmarks.
 
 %The difference between processes and threads under Linux 2.4 is that threads share more parts of their state (address space, file handles etc) than processes, 
 
-\subsection{Scalable thread model}
+\subsection{Scalable thread library}
 %这一部分，我们不提生产消费模型，
 %为什么要进行地址空间隔离，通过新的线程模型，我们实现了地址空间隔离，隔离之后有什么好处？相比Phoenix，我们这种新的模型会不会带来开销。
 
 Our goal is to enable the pagefaults to be scalable  for many cores.
 There are some ways to achieve this target. 
-\redt{For example, in \cite{Clements2012Scalable},  a scalable operation system is proposed by using ....;
-in \cite{},  the authors think process has a better scalability than thread since the process needs not to share the address space with the other processes.
-}
+For example, Corey\cite{boyd2008corey} is a scalable operating system for multicore.
+Clements et.al. proposed a scalable address spaces is by using rcu balanced trees \cite{Clements2012Scalable};
+In \cite{Andi2009lmulticore}, the authors think process has a better scalability than thread since the process needs not to share the address space with the other processes.
 %applications use processes instead of threads can avoid a single shared address space
 However, modifying operation system is impracticable and employing the process rather than the thread will make sharing become complicated. 
 In order to provide a practicable and simple solution, a key problem to be solved is that how to enable threads to eliminate contention on the per-process read/write semaphore when multiple threads concurrently run pagefaults.

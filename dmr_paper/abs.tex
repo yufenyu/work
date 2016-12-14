@@ -1,30 +1,28 @@
 \begin{abstract}
-Designing and implementing efficient, simply
-parallel programming model is challenging.
-Traditional parallel programming techniques
-like Pthreads and OpenMPI leave programmers
-solving many details of design chanllenges.
-Dynamic runtimes can simplify parallel programming 
-by automatically managing concurrency without
-further burdening the programmer. 
-Nevertheless, implementing such runtime systems for large-scale, shared-memory systems
-can be challenging.
-Phoenix, a MapReduce library for multicore, 
-show that MapReduce is a promising model 
-for scalable performance on mulitcore and multiprocess.
-Applications written with MapReduce framwork
-have competitive scalability and performance
-comparied to those written with Pthreads.
+The multicore chips have been  widely used, while utilizing multicore sources is still challenging because of the difficulties of parallel programming.
+Traditional parallel programming techniques like Pthreads and OpenMPI leave programmers solving many details of design challenge.
+%The programmers need to manually manage many details, such as synchronization, load balance, by using the traditional parallel programming techniques. 
+%while designing and implementing efficient, simply parallel programming model is challenging because of many details of design challenges.
+%Traditional parallel programming techniques like Pthreads and OpenMPI leave programmers solving many details of design challenge.
+MapReduce, a simple and elegant programming model, can simplify parallel programming by automatically managing concurrency without further burdening the programmer. 
+Phoenix, a MapReduce library for multicore and multiprocess, demonstrates that applications written with MapReduce framwork have competitive scalability and performance compared to those written with Pthreads.
+%Nevertheless, implementing such runtime systems for large-scale, shared-memory systems can be challenging.
+%And it shows that MapReduce is a promising model for scalable performance on mulitcore and multiprocess.
+%And applications written with MapReduce framwork have competitive scalability and performance comparied to those written with Pthreads.
+However, evaluation results show that the optimized Phoenix\cite{yoo2009phoenix2} significantly underperformed on an 4-chip, 32-cores system running x86 Linux.
 
+This paper focuses on improving Phoenix in the term of scalability and performance from a new perspective.
+First, we will analyze the limitations of scalability and performance. 
+Then we propose a novel thread thread library, \myds, with better scale for multicore. 
+Based on \myth, we design a modified version of MapReduce model, a scalable mapreduce model (\myds) for multicore.
+%MapReduce library, \myds, which is based on a scalable thread library, \myth.
+Furthermore, we exploit a novel producer-consumer model to pipeline map and reduce phase.
+We evaluated \myds on a 32 CPU cores processor.
+The evaluation results show that application like \codet{histgram}, \codet{word\_count} and \codet{pca} with \myds achieve up to speedup over Phoenix in term of scalability and performance.
 
-%Our previous work, DMR\cite{zhang2015dmr}, a deterministic MapReduce for multicore,
 %is a safe and efficient alternative to Phoenix. 
 %In addition, evaluation results show 
 %application like \textit{pca} and \textit{word\_count} have better 
 %scalabiliy and performans than Phoenix. 
 
-This work presents \myds, a modified version of phoenix framwork 
-(...)
-We evaluated \myds on a 32 CPU cores process.
-The results show that \myds achieves up to (NUM1) speedup over Phoenix.
 \end{abstract}
