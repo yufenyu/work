@@ -15,15 +15,15 @@ To reduce the effect of outliers, the lowest and the highest runtimes for each w
 \subsection{Performance and Scalability}
 %描述benchmarks的特点，benchmarks的数据集等
 In this subsection, we measured the performance and scalability of \myds, and compare it with Phoenix.  
-Since there are many heap objects shared among threads in Phoenix, and it is sensitive to memory allocator.
+Since there are many heap objects shared among threads in Phoenix, and it is sensitive to memory allocator\cite{yoo2009phoenix2}.
 The memory allocator in glibc (i.e. ptmalloc\cite{gloger1997ptmalloc}), does not scale on multicore system. 
 Compared to ptmalloc\cite{gloger1997ptmalloc}, jemalloc provided improved performance and scalability\cite{evans2006jemalloc}. 
 Therefore, we evaluate performance and scalability of Phoenix with jemalloc and ptmalloc, respectively.
 
 \subsubsection{Performance}
-Based on \myth, we implemented the optimization of Phoenix in Section \ref{sec:runtime} and measured \myds performance by executing each benchmark, including histogram (\codet{hist}), linear\_regression (\codet{lr}), string\_match (\codet{sm}), wordcount (\codet{wc}), and pca (\codet{pca}). \redt{Why use these benchmark?}
-
-Table II describes the workloads and their input datasets. 
+Based on \myth, we implemented the optimization of Phoenix in Section \ref{sec:runtime} and measured \myds performance by executing each benchmark, including histogram (\codet{hist}), linear\_regression (\codet{lr}), string\_match (\codet{sm}), wordcount (\codet{wc}), and pca (\codet{pca}). 
+%\redt{Why use these benchmark?}
+%Table II describes the workloads and their input datasets. 
 \begin{figure}[!h!t]  
 	\centering
 	\includegraphics[width=0.45\textwidth]{eps/dmr_time_array.eps}
@@ -37,8 +37,8 @@ As shown in the Figure \ref{fig:smr:time:ptmalloc}, for \codet{hist}, \codet{wc}
 The average improvement was \redt{2.0x} for less then 8 cores.
 For more then 8 cores, specially with 16 and 32 cores, the improvement were obvious, reaching \redt{10.x} in maximum and \redt{5.0x} on average.
 %and the variation across applications were rather small.
-For sm, it has performed as well as Phoenix when the cores number less then 16, while it better than Phoenix when there is more cores.
-However, \myds runs worse than Phoenix on \code{lr} (about 0.8x).
+For \codet{sm}, it has performed as well as Phoenix when the cores number less then 16, while it surpasses Phoenix when there is more cores.
+However, \myds runs worse than Phoenix on \codet{lr} (about 0.8x).
 \begin{figure}[!h!t]  
 	\centering
 	\includegraphics[width=0.45\textwidth]{eps/dmr_time_jemalloc.eps}
@@ -46,18 +46,26 @@ However, \myds runs worse than Phoenix on \code{lr} (about 0.8x).
 	\label{fig:smr:time:jemalloc}
 \end{figure}
 
-Figure\ref{fig:smr:time:jemalloc} measures the relative speedup of \myds over Phoenix-jemalloc. 
-We saw similar tendency when compared with Phoenix-jemalloc in Figure\ref{fig:smr:time:jemalloc}, while Phoenix with jemalloc has a better performacne.
-Compared to Phoenix, we significantly increased the performance.
-However, workloads, such as \code{lr} and \code{sm}, still did not scale particularly well. 
-The reason of worse performance on linear\_regression is that most of time is waste in \myds's initailization.
+Then we evaluate the performance of Phoenix with jemalloc.
+The result show that Phoenix with jemalloc has a better performance.
+when compare it with \myds, as showen in Figure \ref{fig:smr:time:jemalloc}, 
+we observe the similar tendency like Phoenix-ptmalloc.
+%Then we observe the similar tendency when compare \myds with Phoenix-jemalloc in Figure \ref{fig:smr:time:jemalloc}, while Phoenix with jemalloc has a better performacne.
+
+
+Compared to Phoenix, we significantly increase the performance.
+For workloads, such as \codet{hist}, \codet{wc} and \codet{pca}, the desired performance of \myds owns to reducing the overhead caused by contending shared address space (Section \ref{sec:design}) and pipelining the Map and Reduce phase (Section \ref{sec:runtime}).
+%However, workloads, such as \codet{lr} and \codet{sm}, still did not scale particularly well. 
+However, \myds can not overcome Phoenix when running \codet{lr} and \codet{sm}. 
+The reason of worse performance on \codet{lr} is that most of execution time is waste in \myds's initialization.
+And for \codet{sm}, since it is a computation intensive workload, which does not cause many pagefault, Phoenix can scale well for these benchmarks in less cores.
 We will evaluation overhead of initialization time in Section 5.4.
 We discuss their bottlenecks in detail in Section 5.4, but in the remainder of this section we first focus on the optimizations that turned out to be successful.
 
-\redt{need to explain why hist, wc, pca has good performance,
+%\redt{need to explain why hist, wc, pca has good performance,
 	%实验的结果显示，lr在16核以上，spinlock的开销变大，而SMR的lr通过使用\myth避免这个问题，在16以下，从而获得较好的性能。lr较差的性能，是因为，相对Phoenix的版本，smr版本中用于初始化的花费的开销较大，导致其最终比Phoenix的版本的性能差（将会在5.4说明）hist,wc，pca, 具有较好的性能是，smr使用sthread避免spinlock的开销，同时将map和reduce进行pipeline，从而具有较好的性能。
 %	 It is contrasted with 
-}
+%}
 
 %\begin{figure}[htpb]
 %	\centering
@@ -116,6 +124,8 @@ We discuss their bottlenecks in detail in Section 5.4, but in the remainder of t
 
 \subsubsection{Scalability}
 %Phoenix-jemalloc版本scalability存在的问题
+Since Phoenix is sensitive to memory allocator\cite{yoo2009phoenix2}, we firstly evaluate its scalability with jemalloc, a good scalable memory allocator.
+Figure \ref{fig:phoenix:speedup:jemalloc} shows the speedup of Phoenix with jemalloc.
 \begin{figure}[!h!t]  
 	\centering
 	\includegraphics[width=0.45\textwidth]{eps/phoenix_speedup_jemalloc.eps}
@@ -129,8 +139,7 @@ We discuss their bottlenecks in detail in Section 5.4, but in the remainder of t
 
 %For linear\_regression (lr) and string\_match (sm),  using 16 or more  cores leads to speedup degradation.
 
-Since Phoenix is sensitive to memory allocator, we evaluate its scalability with jemalloc, good scalability allocator.
-Figure\ref{fig:phoenix:speedup:jemalloc} shows the speedup of Phoenix with jemalloc.
+
 %\begin{figure}[htpb]
 %	\centering
 %	\subfigure[speedup of Phoenix-jemalloc]{
