@@ -8,7 +8,7 @@
 %目前的现状，需求
 As the prevalence of multicore chips, it is foreseeable that tens to hundreds (even thousands) of cores on a single chip will appear in the near future\cite{Borkar2007core}.
 However, utilizing multicore sources is still challenging because of the difficulties of parallel programming.
-Specifically, traditional parallel programming techniques require the programmer to manually manage synchronization, load balancing and locality, and understand the detail  of underlying hardware, which is error-prone (e.g., races and deadlocks). %requests the programmer to understand the detail  of underlying hardware.
+Specifically, traditional parallel programming techniques require the programmer to manually manage synchronization, load balancing and locality, and explicitly understand the detail of underlying hardware, which is error-prone and complicated. %requests the programmer to understand the detail  of underlying hardware.
 An alternative approach is dependent on a runtime system for concurrency management. 
 
 %MapReduce以及Phoenix
@@ -98,6 +98,7 @@ As a result, the scalability of applications with Phoenix will be limited.
 To remedy the problems mentioned above, we design a modified MapReduce framework with preserving the programming interfaces of previous MapReduce.
 Firstly, we propose a scalable thread libray (\myth).
 Then based on \myth, this paper presents a scalable MapReduce model for multicore, \myds(Scalable MapReduce), which can efficiently support MapReduce applications.
+
 %\myds reserves the similar Phoenix programing interfaces as well.
 The main contributions of this paper are concluded as follows:
 %Specifically, this paper make the following contributions:
@@ -107,7 +108,7 @@ The main contributions of this paper are concluded as follows:
   \item We develop a scalable thread library, \myth, in which threads run in  the separated memory space to avoid the contention on the shared space. Furthermore, \myth provides the \codet{shared-channel} for the threads to communicate with others. 
 
   \item Base on \myth, we propose a scalable MapReduce model, \myds.
-  \myds pipelines the Map and Reduce phase by adapting a new producer-consumer model, in which producer does not have to wait when the buffer is full. 
+  And \myds pipelines the Map and Reduce phase by adapting a new producer-consumer model, in which producer does not have to wait when the buffer is full. 
 
   \item We implement a prototype of \myth and demonstrate the effectiveness of \myds runtime on a 32-cores system. 
 %  The optimized runtime exhibits significantly improved scalability over the Phoenix; For 32cores, the new runtime improves speedup up to maximum 5.0x.
@@ -115,7 +116,7 @@ The main contributions of this paper are concluded as follows:
 
 %介绍文章的组织结构
 In order to ground our discussion, we present an overview of MapReduce framework and Phoenix in Section \ref{sec:back}. 
-We then develop the design of \myth in Section \ref{sec:design}, focusing  on implementing mechanism of extension. 
+We then develop the design of \myth in Section \ref{sec:design}, focusing on implementing mechanism of extension in \myth. 
 %In Section 4 we show how \myth can support
 %\myds and illustrate
 %the potential benefits of that producer-consumer model for MapReduce framework.

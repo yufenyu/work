@@ -36,28 +36,24 @@ That means the time of completing a workload will increase if there are more cor
 %函数的调用图显示，ticket\_spin\_lock几乎全部是由pagefault引起的。
 In order to analyze the limited scalability behavior, Linux perf is exploited to collect execution time information of hot function. 
 We note that the map function is the hottest function with less cores, while \_\_ticket\_spin\_lock will become the hottest function with more cores.
-\redt{
-\_\_ticket\_spin\_lock is a type of spinlock which is caused by lock contention in Linux kernel.
-In order to specially explore the impact of spinlock, we collect the execution time percent of \_\_ticket\_spin\_lock on each benchmark from 1 to 32 cores by Linux perf.
-}
+\_\_ticket\_spin\_lock is a type of spinlock which is caused by the contention on the shared structure in Linux kernel.
+In order to specially explore the impact of spinlock in Phoenix, we collect the execution time percent of \_\_ticket\_spin\_lock on each benchmark from 1 to 32 cores by Linux perf.
+
 %However, the structure data shared by multiple threads in Linux kernel can cause the lock contention, which will degrade the scalability of Phoenix.
 %To alleviate the overhead of lock, Phoenix has took two strategies to avoid multiple threads contending the share area.
 %Figure \ref{fig:phoenix:spinlock} shows the execution time percent of \_\_ticket\_spin\_lock on each benchmark. 
-As the result shows in Figure \ref{fig:phoenix:spinlock}, the cost of spinlock increases quickly as the cores number cross a specific value (ie. 8).
+As the result shows in Figure\ref{fig:phoenix:spinlock}, the cost of spinlock increases quickly as the cores number cross a specific value (ie. 8).
 %And in 32 cores, the \_\_ticket\_spin\_lock needs largest execution time for hist, lr, wc, sw.
 %Specially, hist with 16 and 32 cores shows that \_\_ticket\_spin\_lock is the function that has largest execution time percents of 40.15\%  and 71.25\%, respectively. 
 Specially, for hist with 16 and 32 cores, \_\_ticket\_spin\_lock is the function that has largest execution time percents of 40.15\%  and 71.25\%, respectively. 
+Experiment results demonstrate that Phoenix will suffer from serious lock contention when the cores number exceeds 8. 
+That means most of execution time will be used for waiting but not actual computation.
+Call-graph information shows that \_\_ticket\_spin\_lock is caused by pagefault, which is not scale well on large numbers of cores.
 
-\redt{\_\_ticket\_spin\_lock is a type of spinlock which is caused by lock contention in Linux kernel.
-	In Linux 3.2 kernel, \_\_ticket\_spin\_lock is used to ....
-	Linux kernel won't scale well on multicores system: 
-	that applications will spend an increasing fraction of their time in the kernel as the number of cores increases.
-	Experiment results demonstrate that Phoenix will suffer from serious lock contention
-	when the cores number exceeds 8. 
-	That means most of execution time will be used for waiting but not actual computation.
-Call-graph information shows that \_\_ticket\_spin\_lock is caused by pagefault.
-That means pagefaults won't scale well on large numbers of cores:	
-}
+%	Linux kernel won't scale well on multicores system: 
+%	that applications will spend an increasing fraction of their time in the kernel as the number of cores increases.
+		
+
 
 
 \begin{figure}[!h!t]  
@@ -156,7 +152,7 @@ Our goal is to enable the pagefaults to be scalable  for many cores.
 There are some ways to achieve this target. 
 For example, Corey\cite{boyd2008corey} is a scalable operating system for multicore.
 Clements et.al. proposed a scalable address spaces is by using rcu balanced trees \cite{Clements2012Scalable};
-In \cite{Andi2009lmulticore}, the authors think process has a better scalability than thread since the process needs not to share the address space with the other processes.
+Andi et.al think process has a better scalability than thread since the process needs not to share the address space with the other processes\cite{Andi2009lmulticore}.
 %applications use processes instead of threads can avoid a single shared address space
 However, modifying operation system is impracticable and employing the process rather than the thread will make sharing become complicated. 
 In order to provide a practicable and simple solution, a key problem to be solved is that how to enable threads to eliminate contention on the per-process read/write semaphore when multiple threads concurrently run pagefaults.

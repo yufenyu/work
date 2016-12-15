@@ -138,9 +138,9 @@ Since the queue used in MRPhi is a many-to-one queue, multiple map workers will 
 %That means more time spent in waiting lock.
 In addition, it is worth mention that they do not describe how to manage the queue.
 %In fact, there are two ways to manage this queue, 
-\redt{In fact, this queue can be managed by allocating a fixed region or with the help of dynamic memory allocation.
+In fact, this queue can be managed by allocating a fixed region or with the help of dynamic memory allocation.
 %either allocation a fixed regions or with the help of dynamic memory allocation as required.
-If the fixed region is allocated, the map worker will block waiting when the queue is full, which is not good for throughput}.
+If the fixed region is allocated, the map worker will block waiting when the queue is full, which is not good for throughput.
 If the dynamic memory allocation is used,  expensive malloc and free operations are required to manage the queue although map no need waiting,  which will cause overhead.
 
 

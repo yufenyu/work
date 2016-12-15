@@ -21,7 +21,8 @@ Compared to ptmalloc\cite{gloger1997ptmalloc}, jemalloc provided improved perfor
 Therefore, we evaluate performance and scalability of Phoenix with jemalloc and ptmalloc, respectively.
 
 \subsubsection{Performance}
-Based on \myth, we implemented the optimization of Phoenix in Section 4 and measured \myds performance by executing each benchmark, including histogram (\codet{hist}), linear\_regression (\codet{lr}), string\_match (\codet{sm}), wordcount (\codet{wc}), and pca. \redt{Why use these benchmark?}
+Based on \myth, we implemented the optimization of Phoenix in Section 4 and measured \myds performance by executing each benchmark, including histogram (\codet{hist}), linear\_regression (\codet{lr}), string\_match (\codet{sm}), wordcount (\codet{wc}), and pca (\codet{pca}). 
+\redt{Why use these benchmark?}
 Table II describes the workloads and their input datasets. 
 \begin{figure}[!h!t]  
 	\centering
@@ -31,7 +32,7 @@ Table II describes the workloads and their input datasets.
 \end{figure}
 
 Figure\ref{fig:smr:time:ptmalloc} measures the relative speedup of \myds over Phoenix-ptmalloc. 
-As shown in the Figure \ref{fig:smr:time:ptmalloc}, For \codet{hist}, \code{wc} and \code{pca}, the optimized runtime of \myds leads to improvements across all core counts.
+As shown in the Figure \ref{fig:smr:time:ptmalloc}, For \codet{hist}, \codet{wc} and \codet{pca}, the optimized runtime of \myds leads to improvements across all core counts.
 For less then 8 cores, the average improvement was \redt{2.0x} and the variation across applications were rather small.
 For more then 8 cores, specially with 16 and 32 cores, the improvement were obvious, reaching \redt{10.x} in maximum and \redt{5.0x} on average.
 For sm, it has performed as well as Phoenix when the cores number less then 16, while it better than Phoenix when there is more cores.
@@ -196,7 +197,7 @@ We will discuss their bottlenecks in detail in subsection 5.4.
 \begin{figure}[!h!t]  
 	\centering
 	\includegraphics[width=0.45\textwidth]{eps/dmr_speedup.eps}
-	\caption{speedup of Phoenix}
+	\caption{speedup of \myds}
 	\label{fig:smr:speedup}
 \end{figure}
 
@@ -253,7 +254,7 @@ However, not all the workloads benefited from the optimization.
 \begin{figure}[!h!t]  
 	\centering
 	\includegraphics[width=0.45\textwidth]{eps/smr_diff_buffer.eps}
-	\caption{the diffrent implementation of buffer}
+	\caption{Execution time of hash buffer over array buffer}
 	\label{fig:smr:diff:buffer}
 \end{figure}
 
