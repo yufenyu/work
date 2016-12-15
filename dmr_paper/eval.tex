@@ -21,8 +21,8 @@ Compared to ptmalloc\cite{gloger1997ptmalloc}, jemalloc provided improved perfor
 Therefore, we evaluate performance and scalability of Phoenix with jemalloc and ptmalloc, respectively.
 
 \subsubsection{Performance}
-Based on \myth, we implemented the optimization of Phoenix in Section 4 and measured \myds performance by executing each benchmark, including histogram (\codet{hist}), linear\_regression (\codet{lr}), string\_match (\codet{sm}), wordcount (\codet{wc}), and pca (\codet{pca}). 
-\redt{Why use these benchmark?}
+Based on \myth, we implemented the optimization of Phoenix in Section \ref{sec:runtime} and measured \myds performance by executing each benchmark, including histogram (\codet{hist}), linear\_regression (\codet{lr}), string\_match (\codet{sm}), wordcount (\codet{wc}), and pca (\codet{pca}). \redt{Why use these benchmark?}
+
 Table II describes the workloads and their input datasets. 
 \begin{figure}[!h!t]  
 	\centering
@@ -31,10 +31,12 @@ Table II describes the workloads and their input datasets.
 	\label{fig:smr:time:ptmalloc}
 \end{figure}
 
-Figure\ref{fig:smr:time:ptmalloc} measures the relative speedup of \myds over Phoenix-ptmalloc. 
-As shown in the Figure \ref{fig:smr:time:ptmalloc}, For \codet{hist}, \codet{wc} and \codet{pca}, the optimized runtime of \myds leads to improvements across all core counts.
-For less then 8 cores, the average improvement was \redt{2.0x} and the variation across applications were rather small.
+
+Firstly, we compare the execution time of \myds with Phoenix-ptmalloc. 
+As shown in the Figure \ref{fig:smr:time:ptmalloc}, for \codet{hist}, \codet{wc} and \codet{pca}, the optimized runtime of \myds leads to improvement across all core counts.
+The average improvement was \redt{2.0x} for less then 8 cores.
 For more then 8 cores, specially with 16 and 32 cores, the improvement were obvious, reaching \redt{10.x} in maximum and \redt{5.0x} on average.
+%and the variation across applications were rather small.
 For sm, it has performed as well as Phoenix when the cores number less then 16, while it better than Phoenix when there is more cores.
 However, \myds runs worse than Phoenix on \code{lr} (about 0.8x).
 \begin{figure}[!h!t]  
@@ -51,7 +53,11 @@ However, workloads, such as \code{lr} and \code{sm}, still did not scale particu
 The reason of worse performance on linear\_regression is that most of time is waste in \myds's initailization.
 We will evaluation overhead of initialization time in Section 5.4.
 We discuss their bottlenecks in detail in Section 5.4, but in the remainder of this section we first focus on the optimizations that turned out to be successful.
-\redt{need to explain why hist, wc, pca has good performance}
+
+\redt{need to explain why hist, wc, pca has good performance,
+	%实验的结果显示，lr在16核以上，spinlock的开销变大，而SMR的lr通过使用\myth避免这个问题，在16以下，从而获得较好的性能。lr较差的性能，是因为，相对Phoenix的版本，smr版本中用于初始化的花费的开销较大，导致其最终比Phoenix的版本的性能差（将会在5.4说明）hist,wc，pca, 具有较好的性能是，smr使用sthread避免spinlock的开销，同时将map和reduce进行pipeline，从而具有较好的性能。
+%	 It is contrasted with 
+}
 
 %\begin{figure}[htpb]
 %	\centering
@@ -284,7 +290,7 @@ From the experimental results, it is observed that benchmarks yield better perfo
 \myds has the advantage over Phoenix for pipelining map and reduce phases and separating address space by using \myth thread instead of shared memory Pthread. 
 The performance of the \codet{histgram} implementation on Phoenix is the best, 30\%-95\%x better than the Phoenix implementation on the our 32-cores system.
 
-\subsection{ Challenges and Limitations}
+\subsection{ Challenges and Limitations}	
 Although we were able to significantly improve the scalability of \myds, 
 workloads \codet{histogram}, \codet{linear\_regression} still did not scale up to 32cores (as shown in Figure\ref{fig:smr:speedup}). 
 %We used /usr/bin/time to assess where the execution time was
