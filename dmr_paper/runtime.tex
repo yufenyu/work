@@ -125,23 +125,37 @@ And results demonstrate that pipeline can reduce job completion times.
 
 MRPhi\cite{lu2013mrphi}, a MapReduce framework optimized for the Intel Xeon Phi coprocessor,
 pipelines the map and reduce phases to better utilize the hardware resource by adopting a typical producer-consumer model.
-There is a many-to-one queue in the model,  in which multiple map workers will insert data into the queue, and then the single reduce worker removes the data from it. 
+% model is classically implemented as a common queue shared between one or more producers and one or more consumers
+\redt{
+There is a many-to-one queue in this model, in which multiple map workers will insert data into the queue concurrently, and then the single reduce worker removes the data from it. 
+As the number of concurrent map workers increases, the synchronization overheads, such as contention and waiting times, rise sharply and severely impair application performance. 
+On the other hand, The queue is classically implemented as a fixed-size buffer or as a variable-size with the help of dynamic memory allocation.
+If the former is adopted, operations on the queue need be synchronized to make sure that the map worker won’t add data into a full buffer and the reduce worker won’t try to remove data from an empty queue.
+If choosing the latter, expensive malloc and free operations are required to manage the queue, which causing overhead.
+}
 %There are three major data structures, 
 %which are local hash tables, a global hash table, 
 %and partition queues. Specifically, 
-Specifically, when a local hash table in map worker is full, key-value pairs stored in this table are partitioned and pushed into the corresponding queue. 
-Meanwhile, one reduce worker will work on one queue to merge the key-value pairs to the final global hash table. 
+%Specifically, when a local hash table in map worker is full, key-value pairs stored in this table are partitioned and pushed into the corresponding queue. 
+%Meanwhile, one reduce worker will work on one queue to merge the key-value pairs to the final global hash table.
+%There are some deficiencies of producer and consumer model in MRPhi.
+%Since , 
 
-However, there are some deficiencies of producer and consumer model in MRPhi.
-Since the queue used in MRPhi is a many-to-one queue, multiple map workers will append data to the tail of queue  concurrently, which will lead to contend. 
-%when one thread is appending, any thread waiting to append is stalled.
-%That means more time spent in waiting lock.
-In addition, it is worth mention that they do not describe how to manage the queue.
-%In fact, there are two ways to manage this queue, 
-In fact, this queue can be managed by allocating a fixed region or with the help of dynamic memory allocation.
+
+
+
+
+
+
+
+
+%However, there are some deficiencies of producer and consumer model in MRPhi.
+%Since the queue used in MRPhi is a many-to-one queue, multiple map workers will append data to the tail of queue  concurrently, which will lead to contend. 
+%In addition, it is worth mention that they do not describe how to manage the queue.
+%In fact, this queue can be managed by allocating a fixed region or with the help of dynamic memory allocation.
 %either allocation a fixed regions or with the help of dynamic memory allocation as required.
-If the fixed region is allocated, the map worker will block waiting when the queue is full, which is not good for throughput.
-If the dynamic memory allocation is used,  expensive malloc and free operations are required to manage the queue although map no need waiting,  which will cause overhead.
+%If the fixed region is allocated, the map worker will block waiting when the queue is full, which is not good for throughput.
+%If the dynamic memory allocation is used,  expensive malloc and free operations are required to manage the queue although map no need waiting,  which will cause overhead.
 
 
 %\subsubsection{Producer-Consumer model}
