@@ -16,10 +16,10 @@ Finally, we defer performance results to Section 5.
 \end{figure}
 
 %不同与Phoenix，DMR将任务队列静态的划分给每个map worker，这样做的好处是，可以避免多个map worker对对任务队列操作从而产生锁的开销。
-The implementation of MapReduce in  \myds is similar to that of in Phoenix. 
+The implementation of MapReduce in \myds is similar to that of in Phoenix. 
 There is a single master worker managing a number of slave workers. Unlike Phoenix,  a worker in \myds is handled by a \myth thread rather than a Pthread thead.
 Figure \ref{fig:dmr:workflow} illustrates the workflow of \myds, including three main phases: map, reduce and merge. 
-At the beginning,  the input data is divided into some tasks by a split function, and then these tasks are pushed  into a task queue. 
+At the beginning, the input data is divided into some tasks by a split function, and then these tasks will be pushed  into a task queue. 
 %On multi-core CPUs, a worker is handled by one thread, which is a \myth thread in \myds.
 %A worker usually needs to process multiple input elements. 
 %Thus the map function is applied to the input elements one by one. 
@@ -30,18 +30,18 @@ At the beginning,  the input data is divided into some tasks by a split function
 %Then in the reduce phase, each reduce operation
 %applies the reduce function to a set of intermediate pairs
 %with the same key. 
-Then workers in Map phase will get these tasks from the task queue and apply the map function to the tasks.
-The intermediate key-value pairs produced by the map worker will be inserted into a local buffer.
+Workers in Map phase will get these tasks from the task queue and invoke the map function to produce the intermediate key-value pairs.
+Then they will be inserted into a local buffer of map worker.
 When this local buffer is full, the map worker will send the intermediate data of the buffer to a one-to-one channel.
-After that, the reduce worker can receive this data from the channel and invoke reduce function to aggregate them with the same key.  
-Finally the results from multiple reduce workers are merged and output.
+After that, the reduce worker can receive this data from the channel and invoke the reduce function to aggregate them with the same key.  
+Finally, the results from multiple reduce workers are merged and output.
 
-Compared with existing work, our \myds takes two main strategies to improve its scalability and performance.
+Compared with existing work, \myds takes two main strategies to improve its scalability and performance.
 On the one hand, a worker in \myds is implemented as a \myth thread instead of a shared-memory thread.
 Therefore, threads in the isolated address space can avoid contending on a single per-process lock, which has introduced in Section 3.2.
 On the other hand, the producer-consumer model in Section 3.2 is used to pipeline Map and Reduce phase,
-i.e., the map worker as a producer send key-value pairs to the channel and  the reduce worker as a consumer will receive the key-value pairs from the channel. 
-Once the reduce workers receive these key-value pairs, it will invoke the reduce function to work with no need for waiting all workers in Map phase finished.
+i.e., the map worker as a producer will send key-value pairs to the channel and the reduce worker as a consumer will receive the key-value pairs from the channel. 
+Once the reduce workers receive these key-value pairs, it will start working with no need for waiting the Map phase finished.
 %As a result, \myds breaks the barrier in Phoenix.
 
 %The map phase reads the task’s split from task queue,
@@ -71,7 +71,7 @@ Once the reduce workers receive these key-value pairs, it will invoke the reduce
 %将之前对combiner和merge阶段的特征进行简单的总结
 {\bf Combiner.}
 There is a optional \code{Combiner} operation, which is a local aggregation in Map phase, can maximally reduce memory pressure caused by the intermediate key-value storage.
-In addition, the \code{Combiner} operation can reduce the communication traffic  between map workers and reducer workers in our \myds.
+In addition, the \code{Combiner} operation can reduce the communication traffic for the channel between map and reducer workers in \myds.
 Furthermore, \myds is able to support the \code{Combiner} operation in Reduce phase to cope with the pressure of data skew. 
 %%事实上，为了防止出现数据倾斜的问题，即map阶段的很多key都发送到一个reduce，导致某个reduce有过多的动态内存分配，甚至可能出现内存不够的情况，我们可以对reduce的数据做局部的combiner
 %However, in the Reduce phase, 
@@ -81,22 +81,20 @@ Furthermore, \myds is able to support the \code{Combiner} operation in Reduce ph
 
 {\bf Reduce.}
 Each reduce worker generates a set of output key-value pairs.
-According to the key, the library's Merge phase  will sort these pairs and then produce the final output. 
+The library's Merge phase will sort these pairs according to the key, and then produce the final output. 
 If an application no need to do reduce work, i.e., the reduce function is NULL,
-Phoenix still performs reduction on the intermediate data by using a default reduce function which traverses key-value pairs. 
+Phoenix still performs reduction on the intermediate data by using a default reduce function which will traverse key-value pairs. 
 This procedure is inefficient. 
 Unlike Phoenix, for applications without Reduce function, \myds does not start the Reduce phase but directly starts the Merge after the Map phase.
 
 %做法，作用，我们的优化，不需要进行reduce和merge的阶段，应当尽量避免，以降低时间的开销
 
 \subsection{Pipelined execution}
-Pipelined map and reduce have been adopted 
-in the MapReduce framework for distributed computing\cite{Condie2010mapreduce}. 
-Condie et al. shows since pipelining delivers data downstream operators
-more promptly, it can increase opportunities for
-parallelism, improve utilization and reduce response
-time.
+Pipelined map and reduce have been adopted in the MapReduce framework for distributed computing\cite{Condie2010mapreduce}. 
+Condie et al. show since pipelining delivers data downstream operators more promptly, it can increase opportunities for parallelism, improving utilization and reducing response time.
 And results demonstrate that pipeline can reduce job completion times.
+Then, MRPhi\cite{lu2013mrphi}, a MapReduce framework optimized for the Intel Xeon Phi coprocessor, pipelines the map and reduce phases to better utilize the hardware resource.
+
 %since the intermediate data is delivered to
 %downstream operators more promptly, 
 %it is able to improve resource utilization.
@@ -123,16 +121,15 @@ And results demonstrate that pipeline can reduce job completion times.
 %construct the global container. 
 % )
 
-MRPhi\cite{lu2013mrphi}, a MapReduce framework optimized for the Intel Xeon Phi coprocessor,
-pipelines the map and reduce phases to better utilize the hardware resource by adopting a typical producer-consumer model.
+
+MRPhi adopts a typical producer-consumer model for pipelining, in which there is a many-to-one queue for communication between the map and reduce worker. 
 % model is classically implemented as a common queue shared between one or more producers and one or more consumers
-\redt{
-There is a many-to-one queue in this model, in which multiple map workers will insert data into the queue concurrently, and then the single reduce worker removes the data from it. 
-As the number of concurrent map workers increases, the synchronization overheads, such as contention and waiting times, rise sharply and severely impair application performance. 
-On the other hand, The queue is classically implemented as a fixed-size buffer or as a variable-size with the help of dynamic memory allocation.
-If the former is adopted, operations on the queue need be synchronized to make sure that the map worker won’t add data into a full buffer and the reduce worker won’t try to remove data from an empty queue.
-If choosing the latter, expensive malloc and free operations are required to manage the queue, which causing overhead.
-}
+Multiple map workers will insert data into the queue concurrently, and then the single reduce worker removes the data from it. 
+On the one hand, as the number of concurrent map workers increases, the synchronization overheads, such as contention and waiting times, rise sharply and severely impair application performance. 
+On the other hand, the queue is classically implemented as a fixed-size buffer or as a variable-size buffer with the help of dynamic memory allocation.
+If the former is adopted, operations on the queue need be synchronized to make sure that the map worker won't add data into a full buffer and the reduce worker won't try to remove data from an empty queue.
+If choosing the latter, expensive malloc and free operations are required to manage the queue, which will cause overhead.
+
 %There are three major data structures, 
 %which are local hash tables, a global hash table, 
 %and partition queues. Specifically, 
@@ -163,7 +160,7 @@ If choosing the latter, expensive malloc and free operations are required to man
 %we design a more efficient producer-consumer model based on \myth. 
 We think a good producer-consumer model need to achieve two targets:
 (1) map worker can continue to working when the buffer is full.
-(2) there is no need for too much overhead to manage dynamic memory allocation.
+(2) there is no need for too much overhead on managing dynamic memory allocation.
 Based on \myth, an efficient producer-consumer model for \myds is designed in this subsection.
 It not only pipelines Map and Reduce phase, but also break through the limitation of issues  mentioned above. 
 %我们设计了一个生产者和消费者模型，用于map和reduc阶段的流水并行，有两个重要的数据结构：map worker的buffer池，reducer worker的全局buffer。每个map worker拥有一个私有的buffer池，当key-value产生后，通过partition函数插入到对应的buffer中。其中每个buffer对应一个reduce worker，reduce worker轮循的从各个map的buffer池中取key-value，并调用reduce函数进行计算；每个reduce拥有一个私有的全局buffer，用于存放reduce处理后得到的全局结果。
@@ -179,11 +176,17 @@ It not only pipelines Map and Reduce phase, but also break through the limitatio
 As depicted in Figure \ref{fig:dmr:channel}, in our producer-consumer model, there are two major data structures:
 a local \code{buffer} for each map worker is designed to store the intermediate key-value pairs; 
 a one-to-one \code{shared-channel} in \myth is used to communicate between map and reduce workers.
-With the use of the one-to-one \code{shared-channel}, map worker sends the data to reducer without contenting with other map workers.
-When the \code{buffer} threshold is reached,
-the map worker will send data in \code{buffer} to the shared-channel and then set the \code{buffer} as empty.
-So the \code{buffer} will be reused in the hole Map phase, which saves overhead caused by dynamic memory allocation.
-If the \code{shared-channel} is full,  by triggering the \codet{extension} mechanism described in Section 3.3, map worker can continuously work without waiting for the reduce worker to remove the data from the shared-channel.
+%With the use of the one-to-one \code{shared-channel},
+The one-to-one \code{shared-channel} means that the map worker sends the data to the reduce worker without contenting with other map workers.
+Furthermore, as depicted in Section 3.3, the \code{shared-channel} is a no-boundary channel.
+So, when the \code{shared-channel} buffer is full, the map worker can continuously work with no need for waiting the reduce worker to remove the data from the \code{shared-channel}.
+Moreover, since the \code{shared-channel} is implementation by mapping, it can save overhead caused by dynamic memory allocation.
+%Moreover, the map worker will set the \code{buffer} as empty after sending buffer's data.
+%And the buffer will be reused in the whole Map phase, which saves overhead caused by dynamic memory allocation.
+%When the \code{buffer} threshold is reached,
+%the map worker will send data in \code{buffer} to the \code{shared-channel} and then set the \code{buffer} as empty.
+%So the \code{buffer} will be reused in the hole Map phase, which saves overhead caused by dynamic memory allocation.
+
 
 
 %When an intermediate key-value pair is generated by the mapper,
@@ -215,11 +218,11 @@ If the \code{shared-channel} is full,  by triggering the \codet{extension} mecha
 
 
 %如同Phoenix, 默认情况下，buffer使用hash table来实现，事实上，在我们的模型中，使用array来实现具有更好的性能。下面的章节会详细解释原因。
-In fact, there is a local buffer pool for each map worker, in which each buffer is used to store key-value  pairs which will be sent to a corresponded reducer.
+In fact, there is a local buffer pool for each map worker, in which each buffer stores key-value pairs sent to the corresponded reduce worker.
 %According to the partition function, the map worker can index which buffer to insert the key-value.
-When a key-value pair is generated by the map worker, the partition function is invoked to index the corresponded buffer.
-Once the buffer is determined, the map worker will insert the key-value pair into this buffer.
-In default, the buffer in \myds is a hash table which is similar to Phoenix's buffer.
+When the map worker generates a key-value pair, the partition function is invoked to index the corresponded buffer.
+After the buffer is determined, the map worker will insert the key-value pair into this buffer.
+In default, the buffer in \myds is implemented by a hash table which is similar to Phoenix's buffer.
 We also provide an array buffer implementation for \myds and we will detail the advantage of array buffer in next subsection.
 
 
@@ -258,11 +261,10 @@ Mites \cite{mao2010metis} shows that the organization of intermediate data is cr
 %since the entier body of intermediate data must be reorganized between the Map and Reduce phase:
 %Map produces data in the same order as the input, while Reduce must consume data grouped by key.\cite{mao2010metis}
 %And in a data center, it  
-In cluster, it is the network bandwidth dominates the performance, but on multicore system the performance is dominated by the operations on the  data structure that holds intermediate data.
-Defaultly, buffer in \myds is a hash table (Figure \ref{fig:dmr:hash-buffer}(a)), in which each entry is a pointer, pointing to key array sorted by key.
+In cluster, it is the network bandwidth dominates the performance, but on multicore system the performance is dominated by the operations on the data structure that holds intermediate data.
+By default, the buffer in \myds is a hash table (Figure \ref{fig:dmr:hash-buffer}(a)), in which each entry is a pointer, pointing to a key array sorted by key.
 %\myds stores the key-value pairs in an array sorted by key.
-If the hash table has enough entries, collisions will be rare and the key arrays will be short,
-so that lookup and inserting will cost O(1), which is an attractive quality for workloads.
+If the hash table has enough entries, collisions will be rare and the key arrays will be short, so that lookup and inserting will cost O(1), which is an attractive quality for workloads.
 %The hash table's O(1) lookups make it particularly attractive for workloads with many repeated keys.
 
 
@@ -280,9 +282,9 @@ so that lookup and inserting will cost O(1), which is an attractive quality for 
 %	to that pair based on the local container. This process is
 %	performed using a combiner.)}
 
-Based on \myth, our producer-consumer model  requires that data sent to the channel should be a contiguous block of memory.
-Since the key arrays in the hash buffer is scattered, which implies that all of the key arrays should be gathered together before sending them to the channel.
-This issue can be solved by copying these scattered key arrays out  from the hash buffer and then inserting them into a new contiguous memory region (Figure \ref{fig:dmr:hash-buffer}(b)).
+Since the channel is implemented by mapping, it requires that data sent to the channel should be a contiguous block of memory.
+However, the key arrays in the hash buffer is scattered, which implies that all of the key arrays should be gathered together before sending them to the channel.
+This issue can be solved by copying these scattered key arrays out from the hash buffer and then inserting them into a new contiguous memory region (Figure \ref{fig:dmr:hash-buffer}(b)).
 This extra copy is unfortunate and time-consuming.
 Furthermore, the hash buffer also requires frequent allocations and deallocations of memory for key and value, and simultaneously couples with the data structure creation and destruction, which will 
 negatively affects performance.
