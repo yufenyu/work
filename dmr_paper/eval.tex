@@ -314,14 +314,18 @@ Therefore, gather operation needed in hash buffer waste more time, array buffer 
 %The performance of the \codet{histgram} implementation on Phoenix is the best, 30\%-95\%x better than the Phoenix implementation on the our 32-cores system.
 
 \subsection{ Challenges and Limitations}	
-Although we were able to significantly improve the scalability of \myds, 
-workloads \codet{histogram}, \codet{linear\_regression} still did not scale up to 32cores.
-Figure \ref{fig:smr:time:ptmalloc} presents their execution time at various core counts.
+Although we were able to significantly improve the performance and scalability of \myds, 
+workloads \codet{histogram} and \codet{linear\_regression} still did not scale up to 32cores (Figure \ref{fig:smr:speedup}).
+In addition, \myds spend more time then Phoenix when run \codet{linear\_regression} (Figrure \ref{fig:smr:time:ptmalloc}). 
+
+%Figure \ref{fig:smr:time:ptmalloc} presents their execution time at various core counts.
 %We used /usr/bin/time to assess where the execution time was
-We collect each phase time information to find out where the execution time was being spent by using stub. 
-The results denote that workloads on \myds waste more execution time in initialization phase, compared to Phoenix.
-Figure \ref{fig:env:init} shows the initialization time of \myds and Phoenix.
-Exactly, the initialized time of \myds is range 0.25s to 0.35s, while it is just about 0.001s in Phoenix.
+To find out where the execution time was being spent, we collect each phase time information by using stub. 
+The results denote that workloads on \myds waste more execution time in initialization phase when compared to Phoenix.
+Figure \ref{fig:env:init}(a) and \ref{fig:env:init}(b) exhibit the initialization time of \myds and Phoenix, respectively.
+The results show that the initialized time of \myds is range 0.25s to 0.35s, while it is just about 0.001s in Phoenix, which is far less than in \myds.
+Moreover, we find that initialized time is small variation for different benchmarks and in different cores count, except for \codet{pca}, from the experimental results (Figure \ref{fig:env:init}(b)).
+Since there are two times mapreduce computation in \codet{pca}, which lead to two times initialization, it take more time than others benchmarks.
 \begin{figure}[!h!t]  
 	\centering
 	\includegraphics[width=0.5\textwidth]{eps/env_init.eps}
@@ -331,13 +335,14 @@ Exactly, the initialized time of \myds is range 0.25s to 0.35s, while it is just
 
 
 %解释为什么smr中的初始化时间会这么大
-For multicore MapReduce library, most of initialized time is occupied in creating map and reduce threads.
-Compared to thread in Phoenix, which based on Pthread, creating thread will spend more time in \myds because of more resource need to be allocated.
-In addition, it will take more time for creating \codet{shared-channel} and setting up it.
-From the experimental results (Figure\ref{fig:env:init}(b)), we observed that initialized time is small variation for different benchmarks and in different cores count, except for \codet{pca}.
-Since there are two times mapreduce computation in \codet{pca}, which lead to two times initialization, it take more time than others benchmarks.
-  
+For multicore MapReduce workflow, most of initialized time is occupied in creating map and reduce threads.
+Phoenix based on Pthread, in which multiple threads share the process's resource, can save time for creating threads.
+Compared with Pthread, there are many resource needed to allocate for each \myth thread, including separated address space, shared channel and setting up producer and consumer relationship.
+As a result, \myds will take more time for in initialization.
+%Compared to thread in Phoenix, which based on Pthread, creating thread will spend more time in \myds because of more resource need to be allocated.
+%What's more, it will take more time for creating \codet{shared-channel} and setting up producer and consumer relationship for it in \myds.
 
+  
 \begin{figure}[htpb]
 	\centering
 	\subfigure[Execution time and initialization time on histgram]{
@@ -356,12 +361,13 @@ Since there are two times mapreduce computation in \codet{pca}, which lead to tw
 %这种较大较大的初始化对performance和scalability造成的影响
 
 
-Figure \ref{fig:dmr:hist:init} shows the result with exec time defined as mapreduce actual execution time and init time as the initialization time before workers starting work. 
-It was clear that the 2 non-scaling workloads shared two common trends. 
-First, the total execution time of both \codet{histgram} and \codet{linear\_regression} less than 2.7s for all cores, which if far less than other benchmarks. 
-Second, As the increasing number of cores, the portion of actual computation time (execution time) significantly decreased.
-However, the initialization time is almost constant, which cause the init time ratio increase and dominate the total execution time at high cores count. 
-As a result, the total execution time of \codet{linear\_regression} on Phoenix will less than on \myds.
+Figure \ref{fig:dmr:hist:init} shows the result with \codet{exec} defined as mapreduce actual execution time and \codet{init} as the initialization time. 
+It was clear that the 2 non-scaling workloads (i.e., \codet{histgram} and \codet{linear\_regression}) share two common trends. 
+First, the total execution time of both \codet{histgram} and \codet{linear\_regression} less than 2.7s for all cores, which is far less than other benchmarks. 
+Second, as the increasing number of cores, the portion of actual computation time (i.e., \codet{exec}) significantly decreased.
+However, the initialization time is almost constant, which cause the \codet{init} time ratio increase and dominate the total execution time at high cores count. 
+As a result,  \codet{histgram} and \codet{linear\_regression} can not scale up to 32 cores.
+And the total execution time of \codet{linear\_regression} on Phoenix will less than on \myds.
 %Second, the portion of actual computation time assumed by kernel code (sys /
 %effective) significantly increased as we went beyond the single
 %chip boundary.

@@ -17,11 +17,11 @@ And \myds exploits \myth thread to implement map and reduce workers, which resul
 %多核环境下的mapreduce库，虽然我们没有与mites, Tilt-MapReduce进行对比，但通过我们的研究，只要这些库使用pthread进行编程，那么就会存在scalability较差的问题。
 Tilt-MapReduce\cite{chen2010tiled} uses the “tiling strategy” to partition a large MapReduce job into a number of small sub-jobs and handles the sub-jobs iteratively.
 MRPhi\cite{lu2013mrphi} is a MapReduce framework optimized for the Intel Xeon Phi coprocessor.
-It pipeline the map and reduce phases to better utilize the hardware resource by producer-consumer model, which has some limitations.
+Its pipeline the map and reduce phases to better utilize the hardware resource by producer-consumer model, which has some limitations.
 Mao et al.\cite{mao2010metis} consider that the organization of the intermediate values produced by Map invocations and consumed by Reduce invocations is central to achieving good performance on multicore processors. 
 They present a optimized MapReduce library (i.e., Metis) using an efficient data structure consisting of a hash table per map thread with a b+tree in each hash entry.
 Although, we don't compare \myds with mites, Tilt-MapReduce,
-our research shows that if the MapReduce library implemented by Pthreads, there will be problem of scalability.
+our research shows that if the MapReduce library implemented by Pthreads, there will be limitation of scalability for these framework.
 
 
 Serveral paper have looked at scaling systems on mulitcore system.
@@ -29,6 +29,6 @@ Boyd-Wickizer et al. aimed at designing a scalable operating system for multicor
 RadixVM\cite{clements2013radixvm}, a new virtual memory design
 that allows VM-intensive multithreaded applications to scale
 with the number of cores.
-others ....
+\redt{others ....}
 
 
