@@ -19,6 +19,7 @@ Finally, we defer performance results to Section 5.
 The implementation of MapReduce in \myds is similar to that of in Phoenix. 
 There is a single master worker managing a number of slave workers. Unlike Phoenix,  a worker in \myds is handled by a \myth thread rather than a Pthread thead.
 Figure \ref{fig:dmr:workflow} illustrates the workflow of \myds, including three main phases: map, reduce and merge. 
+
 At the beginning, the input data is divided into some tasks by a split function, and then these tasks will be pushed  into a task queue. 
 %On multi-core CPUs, a worker is handled by one thread, which is a \myth thread in \myds.
 %A worker usually needs to process multiple input elements. 
@@ -30,9 +31,9 @@ At the beginning, the input data is divided into some tasks by a split function,
 %Then in the reduce phase, each reduce operation
 %applies the reduce function to a set of intermediate pairs
 %with the same key. 
-Workers in Map phase will get these tasks from the task queue and invoke the map function to produce the intermediate key-value pairs.
+Workers in Map phase will get these tasks and invoke the map function to produce the intermediate key-value pairs.
 Then they will be inserted into a local buffer of map worker.
-When this local buffer is full, the map worker will send the intermediate data of the buffer to a one-to-one channel.
+If this local buffer is full, the map worker will send the intermediate data of the buffer to a one-to-one channel.
 After that, the reduce worker can receive this data from the channel and invoke the reduce function to aggregate them with the same key.  
 Finally, the results from multiple reduce workers are merged and output.
 
@@ -218,11 +219,11 @@ Moreover, since the \code{shared-channel} is implementation by mapping, it can s
 
 
 %如同Phoenix, 默认情况下，buffer使用hash table来实现，事实上，在我们的模型中，使用array来实现具有更好的性能。下面的章节会详细解释原因。
-In fact, there is a local buffer pool for each map worker, in which each buffer stores key-value pairs sent to the corresponded reduce worker.
+In fact, each map worker has a local buffer pool, in which each buffer stores key-value pairs sent to the corresponded reduce worker.
 %According to the partition function, the map worker can index which buffer to insert the key-value.
 When the map worker generates a key-value pair, the partition function is invoked to index the corresponded buffer.
 After the buffer is determined, the map worker will insert the key-value pair into this buffer.
-In default, the buffer in \myds is implemented by a hash table which is similar to Phoenix's buffer.
+In default, the buffer is implemented by a hash table which is similar to Phoenix's buffer.
 We also provide an array buffer implementation for \myds and we will detail the advantage of array buffer in next subsection.
 
 
@@ -282,20 +283,20 @@ If the hash table has enough entries, collisions will be rare and the key arrays
 %	to that pair based on the local container. This process is
 %	performed using a combiner.)}
 
-Since the channel is implemented by mapping, it requires that data sent to the channel should be a contiguous block of memory.
+Since the channel is implemented by mapping (in Section 3.3), it requires that data sent to the channel should be a contiguous block of memory.
 However, the key arrays in the hash buffer is scattered, which implies that all of the key arrays should be gathered together before sending them to the channel.
 This issue can be solved by copying these scattered key arrays out from the hash buffer and then inserting them into a new contiguous memory region (Figure \ref{fig:dmr:hash-buffer}(b)).
 This extra copy is unfortunate and time-consuming.
-Furthermore, the hash buffer also requires frequent allocations and deallocations of memory for key and value, and simultaneously couples with the data structure creation and destruction, which will 
-negatively affects performance.
+Furthermore, the hash buffer also requires frequent allocations and deallocations of memory for key and value, and simultaneously couples with the data structure creation and destruction, which will negatively affect performance.
 
 %为了提高效率，避免group阶段产生的开销，我们试图改进buffer的hash实现，它不再采用原来 Phoenix 中的 hash 表的组织方式,而是采用更简单的 array,map worker 产生的 key-value只需追加到 array 中即可,无需排序。
 
 %The buffers are initially sized to a default value and then resized dynamically as needed.
 To avoid the time-consuming gather in hash buffer, we  implement an easy-to-use array buffer, and the map worker could store its output by appending  key-value pairs to array buffer.
-The array buffer is initially sized to a default value, and it can be reused in the hole of Map phase.
+The array buffer is initially sized to a default value.
+After sending buffer's data to the channel, the map worker will indicate the buffer as empty, but will not free the memory until all map jobs have been finished.
+Therefore, memory of array buffer can be reused in the whole of Map phase.
 %After sending the data of buffer, 
-The map worker will indicate the buffer as empty at the end of a sending, but will not free the memory until all map jobs have been finished.
 This manner avoids the expensive costs of memory allocation and deallocation as well as the data structures construction and destruction.
 Above all, unlike hash buffer, the array buffer is a contiguous memory block, it not have to gather key-value pairs before sending.
 The experiment results show that the array buffer is more effective than the hash buffer for some applications that likely have abundant key-value pairs, such as word\_count (Section 5).
