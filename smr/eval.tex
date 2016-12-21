@@ -12,8 +12,20 @@ To reduce the effect of outliers, the lowest and the highest runtimes for each w
 
 %\subsection{ Performance Improvements Summary}
 %\subsection{Benckmarks}
+%The benchmark applications are derived from those
+%supplied by Phoenix, and summarized in Figure 6. For
+%StringMatch, LinearRegression and Histogram, the num-
+%ber of keys is fixed and the number of pairs per key de-
+%pends on the number of map input splits. The results for
+%sections other than 5.4 use the workloads described in
+%Figure 7. These are chosen to ensure the applications run
+%for a moderately long time, but still fit in memory. The
+%inputs are in the in-memory buffer cache.
+
 Five MapReduce applications is used in the evaluation, including histogram (\codet{hist}), linear\_regression (\codet{lr}), string\_match (\codet{sm}), wordcount (\codet{wc}), and pca (\codet{pca}).
-These applications represent two different classes:
+we report results using the large data sets available, which are summarized in Table \ref{}.
+
+%These applications represent two different classes:
 
 
 \subsection{Performance and Scalability}
@@ -61,8 +73,8 @@ However, when the core count increases from 8 to 16 to 32, the speedup sharply d
 	\label{fig:phoenix:spinlock:jemalloc}
 \end{figure}
 The above performance changes can be explained from contending on the shared address space in Linux kernel.
-Therefore, we also collect \_\_ticket\_spin\_lock execution time percent information to peek the contention by Linux perf.
-The results as shown in Figure \ref{fig:phoenix:spinlock:jemalloc}, denote serious lock contention takes place when increase the number of cores over 8 and as a result execution time will be drastically increased.
+Therefore, we collect \_\_ticket\_spin\_lock execution time percent information to peek the contention by Linux perf.
+The results as shown in Figure \ref{fig:phoenix:spinlock:jemalloc}, turn out that serious lock contention takes place when increase the number of cores over 8 and as a result execution time will be drastically increased.
 
 
 %When the number of dependent processes increases above the
@@ -71,7 +83,7 @@ The results as shown in Figure \ref{fig:phoenix:spinlock:jemalloc}, denote serio
 %As the number of threads increases from 32 to 33, 
 %there is a significant increase in execution time owing to .
 
-In conclusion, increasing cores number results in the growth of speedup for Phoenix at low cores.
+Overall, increasing cores number results in the growth of speedup for Phoenix at low cores.
 However, as more cores were added, the benefit was reversed due to the increased time spent in spinlock.
 The results indicate that in spite of using the scalable memory allocator, Phoenix can not scale up to 16 cores.
 
@@ -82,7 +94,7 @@ The results indicate that in spite of using the scalable memory allocator, Phoen
 
 \subsubsection{Performance of SMR}
 Based on \myth, we implemented the optimization of Phoenix in Section \ref{sec:runtime} and measured \myds performance by executing each benchmark. 
-We compare the execution time of \myds with \code{Phoenix-ptmalloc} and \codet{Phoenix-jemalloc}, respectively.
+We compare the execution time of \myds with \codet{Phoenix-ptmalloc} and \codet{Phoenix-jemalloc}, respectively.
 %\redt{Why use these benchmark?}
 %Table II describes the workloads and their input datasets. 
 \begin{figure}[!h!t]  
@@ -93,8 +105,9 @@ We compare the execution time of \myds with \code{Phoenix-ptmalloc} and \codet{P
 \end{figure}
 
 
-%Firstly, we compare the execution time of \myds with \code{Phoenix-ptmalloc}. 
-As shown in the Figure \ref{fig:smr:time:ptmalloc}, for \codet{hist}, \codet{wc} and \codet{pca}, the optimized runtime of \myds leads to improvement across all core counts.
+%Firstly, we compare the execution time of \myds with \code{Phoenix-ptmalloc}.
+Figure \ref{fig:smr:time:ptmalloc} shows the performance comparison between \myds and Phoenix2.
+For \codet{hist}, \codet{wc} and \codet{pca}, the optimized runtime of \myds leads to improvement across all core counts.
 The average improvement was \redt{2.0x} for less then 8 cores.
 For more then 8 cores, specially with 16 and 32 cores, the improvement were obvious, reaching \redt{10.x} in maximum and \redt{5.0x} on average.
 %and the variation across applications were rather small.
@@ -106,7 +119,9 @@ The only workload that \myds runs worse than Phoenix is \codet{lr}.
 	\caption{SMR versus Phoenix with jemalloc}
 	\label{fig:smr:time:jemalloc}
 \end{figure}
-Figure \ref{fig:smr:time:jemalloc} shows the results of \myds comparing with \codet{Phoenix-jemalloc}. 
+Figure \ref{fig:smr:time:jemalloc} compares the performance of \myds against Phoenix built with jemalloc. 
+%Figure 3 compares the performance of Phoenix++ against Phoenix 2
+
 %Then, we compare the execution time of \myds with \codet{Phoenix-jemalloc}.
 It can be saw that \codet{Phoenix-jemalloc} has a better performance, while the similar tendency like Figure \ref{fig:smr:time:ptmalloc}.
 %when compare it with \myds, as showen in Figure \ref{fig:smr:time:jemalloc}, 
@@ -266,7 +281,7 @@ We will discuss this bottleneck in detail in subsection 5.4.
 
 
 Overall, for applications such as \codet{word\_count}, \codet{histgram} and \codet{pca}, the results show clearly that \myds has better performance and scalability when compared to Phoenix.
-\myds has the advantage over Phoenix for pipelining map and reduce phases and separating address space by using \myth thread instead of shared memory Pthread. 
+\myds has the advantage over Phoenix for pipelining map and reduce phases and separating address space by using \myth thread. 
 However, for applications such as \codet{linear\_regression}, \myds does not show its superiority, which will be analyzed in detail in Section 5.4.
 
 \subsection{Impact of buffer Optimizations}
@@ -306,7 +321,7 @@ To measure the impact of buffer's implementation for performance, we run all app
 Figure\ref{fig:smr:diff:buffer} compares the execution time of hash buffer and array buffer. 
 From the Figure, it can be seen that although cases such as \codet{word\_count} and \codet{histgram} used array buffer has better performance, other benchmarks, e.g., \codet{linear\_regression}, \codet{string\_match} and \codet{pca}, did not.
 A common feature of \codet{word\_count} and \codet{histgram} is that they will generate a large number of key-value pairs in MapReduce computation.
-Therefore, gather operation needed in hash buffer waste more time, array buffer will be better as a result.
+Therefore, gather operation waste more time in hash buffer, resulting in better performance by using array buffer.
 %So, for workloads that generate a large number of key-value pairs, 
 
 %From the experimental results, it is observed that benchmarks yield better performance using \myds than Phoenix (in most cases). 
@@ -316,16 +331,16 @@ Therefore, gather operation needed in hash buffer waste more time, array buffer 
 \subsection{ Challenges and Limitations}	
 Although we were able to significantly improve the performance and scalability of \myds, 
 workloads \codet{histogram} and \codet{linear\_regression} still did not scale up to 32cores (Figure \ref{fig:smr:speedup}).
-In addition, \myds spend more time then Phoenix when run \codet{linear\_regression} (Figrure \ref{fig:smr:time:ptmalloc}). 
-
+In addition, \myds spent more time then Phoenix when run \codet{linear\_regression} (Figrure \ref{fig:smr:time:ptmalloc}). 
 %Figure \ref{fig:smr:time:ptmalloc} presents their execution time at various core counts.
 %We used /usr/bin/time to assess where the execution time was
 To find out where the execution time was being spent, we collect each phase time information by using stub. 
 The results denote that workloads on \myds waste more execution time in initialization phase when compared to Phoenix.
+
 Figure \ref{fig:env:init}(a) and \ref{fig:env:init}(b) exhibit the initialization time of \myds and Phoenix, respectively.
 The results show that the initialized time of \myds is range 0.25s to 0.35s, while it is just about 0.001s in Phoenix, which is far less than in \myds.
-Moreover, we find that initialized time is small variation for different benchmarks and in different cores count, except for \codet{pca}, from the experimental results (Figure \ref{fig:env:init}(b)).
-Since there are two times mapreduce computation in \codet{pca}, which lead to two times initialization, it take more time than others benchmarks.
+Moreover, except for \codet{pca}, we observe that initialized time is small variation for different benchmarks and in different cores count from Figure \ref{fig:env:init}(b).
+Since there are two times mapreduce computation in \codet{pca}, which leads to two times initialization, it take more time than others benchmarks.
 \begin{figure}[!h!t]  
 	\centering
 	\includegraphics[width=0.5\textwidth]{eps/env_init.eps}
@@ -336,8 +351,8 @@ Since there are two times mapreduce computation in \codet{pca}, which lead to tw
 
 %解释为什么smr中的初始化时间会这么大
 For multicore MapReduce workflow, most of initialized time is occupied in creating map and reduce threads.
-Phoenix based on Pthread, in which multiple threads share the process's resource, can save time for creating threads.
-Compared with Pthread, there are many resource needed to allocate for each \myth thread, including separated address space, shared channel and setting up producer and consumer relationship.
+Phoenix, in which multiple threads share the process's resource by using Pthread, can save time for creating threads.
+On the contrary, there are many resource need to be allocated for each \myth thread, including separated address space, shared channel and setting up producer and consumer relationship.
 As a result, \myds will take more time for in initialization.
 %Compared to thread in Phoenix, which based on Pthread, creating thread will spend more time in \myds because of more resource need to be allocated.
 %What's more, it will take more time for creating \codet{shared-channel} and setting up producer and consumer relationship for it in \myds.
@@ -361,11 +376,11 @@ As a result, \myds will take more time for in initialization.
 %这种较大较大的初始化对performance和scalability造成的影响
 
 
-Figure \ref{fig:dmr:hist:init} shows the result with \codet{exec} defined as mapreduce actual execution time and \codet{init} as the initialization time. 
+Figure \ref{fig:dmr:hist:init} shows the results with \codet{exec} defined as mapreduce actual execution time and \codet{init} as the initialization time. 
 It was clear that the 2 non-scaling workloads (i.e., \codet{histgram} and \codet{linear\_regression}) share two common trends. 
 First, the total execution time of both \codet{histgram} and \codet{linear\_regression} less than 2.7s for all cores, which is far less than other benchmarks. 
 Second, as the increasing number of cores, the portion of actual computation time (i.e., \codet{exec}) significantly decreased.
-However, the initialization time is almost constant, which cause the \codet{init} time ratio increase and dominate the total execution time at high cores count. 
+However, the initialization time (i.e., \codet{init}) is almost constant, which cause the \codet{init} time ratio increase and dominate the total execution time at high cores count. 
 As a result,  \codet{histgram} and \codet{linear\_regression} can not scale up to 32 cores.
 And the total execution time of \codet{linear\_regression} on Phoenix will less than on \myds.
 %Second, the portion of actual computation time assumed by kernel code (sys /
