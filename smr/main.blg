@@ -1,0 +1,56 @@
+This is BibTeX, Version 0.99d (TeX Live 2016)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: main.aux
+The style file: abbrvnat.bst
+Database file #1: os.bib
+Database file #2: pa.bib
+Database file #3: my.bib
+Repeated entry---line 140 of file my.bib
+ : %@inproceedings{Clements2013RadixVM
+ :                                    ,
+I'm skipping whatever remains of this entry
+Warning--I didn't find a database entry for ""
+Warning--empty year in linux
+Warning--empty year in linux
+You've used 18 entries,
+            2773 wiz_defined-function locations,
+            722 strings with 8520 characters,
+and the built_in function-call counts, 9928 in all, are:
+= -- 931
+> -- 542
+< -- 18
++ -- 186
+- -- 168
+* -- 765
+:= -- 1476
+add.period$ -- 78
+call.type$ -- 18
+change.case$ -- 105
+chr.to.int$ -- 18
+cite$ -- 38
+duplicate$ -- 479
+empty$ -- 788
+format.name$ -- 188
+if$ -- 2170
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 18
+newline$ -- 116
+num.names$ -- 72
+pop$ -- 230
+preamble$ -- 1
+purify$ -- 88
+quote$ -- 0
+skip$ -- 378
+stack$ -- 0
+substring$ -- 368
+swap$ -- 113
+text.length$ -- 11
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 193
+warning$ -- 2
+while$ -- 84
+width$ -- 0
+write$ -- 284
+(There was 1 error message)

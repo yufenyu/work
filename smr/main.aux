@@ -1,0 +1,125 @@
+\relax 
+\citation{Borkar2007core}
+\citation{dean2004mapreduce}
+\citation{ranger2007phoenix}
+\citation{yoo2009phoenix2}
+\citation{mao2010metis}
+\citation{chen2010tiled}
+\citation{lu2013mrphi}
+\citation{yoo2009phoenix2}
+\citation{clements2013radixvm}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}}
+\newlabel{sec:intro}{{1}{1}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces speedup of Phoenix}}{1}}
+\newlabel{fig:phoenix:speedup}{{1}{1}}
+\citation{ranger2007phoenix}
+\@writefile{toc}{\contentsline {section}{\numberline {2}BACKGROUND}{2}}
+\newlabel{sec:back}{{2}{2}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}MapReduce Programing Model}{2}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Phoenix}{2}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Phoenix intermediate struct}}{2}}
+\newlabel{fig:phoenix:intermediate}{{2}{2}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Optimizing Opportunities of Phoenix}{2}}
+\citation{linux}
+\citation{clements2013radixvm}
+\citation{linux}
+\citation{Andi2009lmulticore}
+\citation{boyd2008corey}
+\citation{Clements2012Scalable}
+\citation{Andi2009lmulticore}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Design of thread program model}{3}}
+\newlabel{sec:design}{{3}{3}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Scalability of Phoenix}{3}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Phoenix ticket\_spin\_lock percent}}{3}}
+\newlabel{fig:phoenix:spinlock}{{3}{3}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Scalable thread library}{3}}
+\citation{}
+\newlabel{sec:pm:thread}{{3.2}{4}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Main functions of {\bf  \em  {SMR}}\xspace  thread API.}}{4}}
+\newlabel{fig:api:thread}{{4}{4}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Design of the Channel}{4}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces channel extend machanism}}{4}}
+\newlabel{fig:spmckern:extend}{{5}{4}}
+\citation{Condie2010mapreduce}
+\citation{lu2013mrphi}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Implementation and Runtime}{5}}
+\newlabel{sec:runtime}{{4}{5}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Execution flow}{5}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces The workflow of {\bf  \em  {SMR}}\xspace  }}{5}}
+\newlabel{fig:dmr:workflow}{{6}{5}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Pipelined execution}{5}}
+\citation{mao2010metis}
+\citation{yoo2009phoenix2}
+\citation{gloger1997ptmalloc}
+\citation{evans2006jemalloc}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Produce-Consume model in SMR}}{6}}
+\newlabel{fig:dmr:channel}{{7}{6}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Buffer Design and Optimize}{6}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces hash buffer and gather}}{6}}
+\newlabel{fig:dmr:hash-buffer}{{8}{6}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Evaluation}{6}}
+\newlabel{sec:eval}{{5}{6}}
+\citation{yoo2009phoenix2}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Phoenix Scalability Analysis}{7}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces speedup of Phoenix-jemalloc}}{7}}
+\newlabel{fig:phoenix:speedup:jemalloc}{{9}{7}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces speedup of Phoenix-jemalloc}}{7}}
+\newlabel{fig:phoenix:spinlock:jemalloc}{{10}{7}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Performance and Scalability}{7}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.2.1}Performance}{7}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces SMR versus Phoenix with ptmalloc}}{7}}
+\newlabel{fig:smr:time:ptmalloc}{{11}{7}}
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces SMR versus Phoenix with jemalloc}}{7}}
+\newlabel{fig:smr:time:jemalloc}{{12}{7}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.2.2}Scalability}{8}}
+\@writefile{lof}{\contentsline {figure}{\numberline {13}{\ignorespaces Execution time percent of \_\_tickect\_spin\_lock in {\bf  \em  {SMR}}\xspace  }}{8}}
+\newlabel{fig:smr:spinlock}{{13}{8}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3} Impact of buffer Optimizations}{8}}
+\@writefile{lof}{\contentsline {figure}{\numberline {14}{\ignorespaces speedup of {\bf  \em  {SMR}}\xspace  }}{8}}
+\newlabel{fig:smr:speedup}{{14}{8}}
+\@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces Execution time of hash buffer over array buffer}}{8}}
+\newlabel{fig:smr:diff:buffer}{{15}{8}}
+\citation{White2010Hadoop}
+\citation{Yang2007MapReducemerge}
+\citation{isard2007dryad}
+\citation{chen2010tiled}
+\citation{lu2013mrphi}
+\citation{mao2010metis}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4} Challenges and Limitations}{9}}
+\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces initialization time of {\bf  \em  {SMR}}\xspace  and Phoenix}}{9}}
+\newlabel{fig:env:init}{{16}{9}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Related Work}{9}}
+\newlabel{sec:rela}{{6}{9}}
+\newlabel{fig:dmr:hist:init}{{17(a)}{9}}
+\newlabel{sub@fig:dmr:hist:init}{{(a)}{9}}
+\newlabel{fig:dmr:lr:init}{{17(b)}{9}}
+\newlabel{sub@fig:dmr:lr:init}{{(b)}{9}}
+\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces Initialize time with {\bf  \em  {SMR}}\xspace  }}{9}}
+\@writefile{lof}{\contentsline {subfigure}{\numberline{(a)}{\ignorespaces {Execution time and initialization time on histgram}}}{9}}
+\@writefile{lof}{\contentsline {subfigure}{\numberline{(b)}{\ignorespaces {Execution time and initialization time on linear\_regression}}}{9}}
+\newlabel{fig:init}{{17}{9}}
+\citation{boyd2008corey}
+\citation{clements2013radixvm}
+\bibdata{os,pa,my}
+\bibcite{Andi2009lmulticore}{{1}{2009}{{Andi~Kleen}}{{}}}
+\bibcite{Borkar2007core}{{2}{2007}{{Borkar}}{{}}}
+\bibcite{boyd2008corey}{{3}{2008}{{Boyd-Wickizer et~al.}}{{Boyd-Wickizer, Chen, Chen, Mao, Kaashoek, Morris, Pesterev, Stein, Wu, Dai, et~al.}}}
+\bibcite{chen2010tiled}{{4}{2010}{{Chen et~al.}}{{Chen, Chen, and Zang}}}
+\bibcite{Clements2012Scalable}{{5}{2012}{{Clements et~al.}}{{Clements, Kaashoek, and Zeldovich}}}
+\bibcite{clements2013radixvm}{{6}{2013}{{Clements et~al.}}{{Clements, Kaashoek, and Zeldovich}}}
+\bibcite{Condie2010mapreduce}{{7}{2010}{{Condie et~al.}}{{Condie, Conway, Alvaro, Hellerstein, Elmeleegy, and Sears}}}
+\bibcite{dean2004mapreduce}{{8}{2004}{{Dean and Ghemawat}}{{}}}
+\bibcite{linux}{{9}{}{{et~al}}{{}}}
+\bibcite{evans2006jemalloc}{{10}{2006}{{Evans}}{{}}}
+\bibcite{gloger1997ptmalloc}{{11}{2006}{{Gloger}}{{}}}
+\bibcite{isard2007dryad}{{12}{2007}{{Isard et~al.}}{{Isard, Budiu, Yu, et~al.}}}
+\bibcite{lu2013mrphi}{{13}{2013}{{Lu et~al.}}{{Lu, Zhang, Huynh, et~al.}}}
+\bibcite{mao2010metis}{{14}{2010}{{Mao et~al.}}{{Mao, Morris, and Kaashoek}}}
+\bibcite{ranger2007phoenix}{{15}{2007}{{Ranger et~al.}}{{Ranger, Raghuraman, Penmetsa, et~al.}}}
+\bibcite{White2010Hadoop}{{16}{2010}{{White}}{{}}}
+\bibcite{Yang2007MapReducemerge}{{17}{2007}{{Yang et~al.}}{{Yang, Dasdan, Hsiao, and Parker}}}
+\bibcite{yoo2009phoenix2}{{18}{2009}{{Yoo et~al.}}{{Yoo, Romano, and Kozyrakis}}}
+\bibstyle{abbrvnat}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Conclusions And Furture Work}{10}}
+\newlabel{sec:concl}{{7}{10}}
+\newlabel{sigplanconf@finalpage}{{7}{10}}

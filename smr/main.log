@@ -1,0 +1,748 @@
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.11.9)  16 DEC 2016 21:53
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**main.tex
+(./main.tex
+LaTeX2e <2016/03/31>
+Babel <3.9r> and hyphenation patterns for 83 language(s) loaded.
+(./sigplanconf.cls
+Document Class: sigplanconf 2013/07/02 v2.8 ACM SIGPLAN Proceedings
+\@numheaddepth=\count79
+(/usr/local/texlive/2016/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2014/09/29 v1.4h Standard LaTeX document class
+(/usr/local/texlive/2016/texmf-dist/tex/latex/base/size10.clo
+File: size10.clo 2014/09/29 v1.4h Standard LaTeX file (size option)
+)
+\c@part=\count80
+\c@section=\count81
+\c@subsection=\count82
+\c@subsubsection=\count83
+\c@paragraph=\count84
+\c@subparagraph=\count85
+\c@figure=\count86
+\c@table=\count87
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+)
+\standardtextwidth=\dimen103
+\standardvspace=\skip43
+
+Using natbib package with 'numbers' citation style.
+(/usr/local/texlive/2016/texmf-dist/tex/latex/natbib/natbib.sty
+Package: natbib 2010/09/13 8.31b (PWD, AO)
+\bibhang=\skip44
+\bibsep=\skip45
+LaTeX Info: Redefining \cite on input line 694.
+\c@NAT@ctr=\count88
+)
+\@sectionaboveskip=\skip46
+\@sectionbelowskip=\skip47
+\@subsectionaboveskip=\skip48
+\@subsectionbelowskip=\skip49
+\@paragraphaboveskip=\skip50
+\@authorcount=\count89
+\@titlenotecount=\count90
+\@titlenotetext=\toks14
+\@fnmark=\toks15
+\@authori=\count91
+\@measbox=\box26
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/psnfss/times.sty
+Package: times 2005/04/12 PSNFSS-v9.2a (SPQR) 
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/graphicx.sty
+Package: graphicx 2014/10/28 v1.0g Enhanced LaTeX Graphics (DPC,SPQR)
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/keyval.sty
+Package: keyval 2014/10/28 v1.15 key=value parser (DPC)
+\KV@toks@=\toks16
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/graphics.sty
+Package: graphics 2016/05/09 v1.0r Standard LaTeX Graphics (DPC,SPQR)
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/trig.sty
+Package: trig 2016/01/03 v1.10 sin cos tan (DPC)
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
+File: graphics.cfg 2016/01/02 v1.10 sample graphics configuration
+)
+Package graphics Info: Driver file: pdftex.def on input line 96.
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/pdftex-def/pdftex.def
+File: pdftex.def 2011/05/27 v0.06d Graphics/color for pdfTeX
+
+(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/infwarerr.sty
+Package: infwarerr 2016/05/16 v1.4 Providing info/warning/error messages (HO)
+)
+(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/ltxcmds.sty
+Package: ltxcmds 2016/05/16 v1.23 LaTeX kernel commands for general use (HO)
+)
+\Gread@gobject=\count92
+))
+\Gin@req@height=\dimen104
+\Gin@req@width=\dimen105
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/tools/tabularx.sty
+Package: tabularx 2016/02/03 v2.11 `tabularx' package (DPC)
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/tools/array.sty
+Package: array 2014/10/28 v2.4c Tabular extension package (FMi)
+\col@sep=\dimen106
+\extrarowheight=\dimen107
+\NC@list=\toks17
+\extratabsurround=\skip51
+\backup@length=\skip52
+)
+\TX@col@width=\dimen108
+\TX@old@table=\dimen109
+\TX@old@col=\dimen110
+\TX@target=\dimen111
+\TX@delta=\dimen112
+\TX@cols=\count93
+\TX@ftn=\toks18
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/subfigure/subfigure.sty
+Package: subfigure 2002/03/15 v2.1.5 subfigure package
+\subfigtopskip=\skip53
+\subfigcapskip=\skip54
+\subfigcaptopadj=\dimen113
+\subfigbottomskip=\skip55
+\subfigcapmargin=\dimen114
+\subfiglabelskip=\skip56
+\c@subfigure=\count94
+\c@lofdepth=\count95
+\c@subtable=\count96
+\c@lotdepth=\count97
+
+****************************************
+* Local config file subfigure.cfg used *
+****************************************
+(/usr/local/texlive/2016/texmf-dist/tex/latex/subfigure/subfigure.cfg)
+\subfig@top=\skip57
+\subfig@bottom=\skip58
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/color.sty
+Package: color 2016/05/09 v1.1c Standard LaTeX Color (DPC)
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics-cfg/color.cfg
+File: color.cfg 2016/01/02 v1.6 sample color configuration
+)
+Package color Info: Driver file: pdftex.def on input line 144.
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/xcolor/xcolor.sty
+Package: xcolor 2016/05/11 v2.12 LaTeX color extensions (UK)
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics-cfg/color.cfg
+File: color.cfg 2016/01/02 v1.6 sample color configuration
+)
+Package xcolor Info: Driver file: pdftex.def on input line 225.
+LaTeX Info: Redefining \color on input line 709.
+Package xcolor Info: Model `cmy' substituted by `cmy0' on input line 1348.
+Package xcolor Info: Model `hsb' substituted by `rgb' on input line 1352.
+Package xcolor Info: Model `RGB' extended on input line 1364.
+Package xcolor Info: Model `HTML' substituted by `rgb' on input line 1366.
+Package xcolor Info: Model `Hsb' substituted by `hsb' on input line 1367.
+Package xcolor Info: Model `tHsb' substituted by `hsb' on input line 1368.
+Package xcolor Info: Model `HSB' substituted by `hsb' on input line 1369.
+Package xcolor Info: Model `Gray' substituted by `gray' on input line 1370.
+Package xcolor Info: Model `wave' substituted by `hsb' on input line 1371.
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/multirow/multirow.sty
+\bigstrutjot=\dimen115
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/url/url.sty
+\Urlmuskip=\muskip10
+Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/tools/xspace.sty
+Package: xspace 2014/10/28 v1.13 Space after command names (DPC,MH)
+) (./main.aux)
+\openout1 = `main.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 98.
+LaTeX Font Info:    ... okay on input line 98.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 98.
+LaTeX Font Info:    ... okay on input line 98.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 98.
+LaTeX Font Info:    ... okay on input line 98.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 98.
+LaTeX Font Info:    ... okay on input line 98.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 98.
+LaTeX Font Info:    ... okay on input line 98.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 98.
+LaTeX Font Info:    ... okay on input line 98.
+LaTeX Font Info:    Try loading font information for OT1+ptm on input line 98.
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/psnfss/ot1ptm.fd
+File: ot1ptm.fd 2001/06/04 font definitions for OT1/ptm.
+)
+(/usr/local/texlive/2016/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count98
+\scratchdimen=\dimen116
+\scratchbox=\box27
+\nofMPsegments=\count99
+\nofMParguments=\count100
+\everyMPshowfont=\toks19
+\MPscratchCnt=\count101
+\MPscratchDim=\dimen117
+\MPnumerator=\count102
+\makeMPintoPDFobject=\count103
+\everyMPtoPDFconversion=\toks20
+) (/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/pdftexcmds.sty
+Package: pdftexcmds 2016/05/10 v0.21 Utility functions of pdfTeX for LuaTeX (HO
+)
+
+(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/ifluatex.sty
+Package: ifluatex 2016/05/16 v1.4 Provides the ifluatex switch (HO)
+Package ifluatex Info: LuaTeX not detected.
+)
+(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/ifpdf.sty
+Package: ifpdf 2016/05/14 v3.1 Provides the ifpdf switch
+)
+Package pdftexcmds Info: LuaTeX not detected.
+Package pdftexcmds Info: \pdf@primitive is available.
+Package pdftexcmds Info: \pdf@ifprimitive is available.
+Package pdftexcmds Info: \pdfdraftmode found.
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
+Package: epstopdf-base 2016/05/15 v2.6 Base part for package epstopdf
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/oberdiek/grfext.sty
+Package: grfext 2016/05/16 v1.2 Manage graphics extensions (HO)
+
+(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/kvdefinekeys.sty
+Package: kvdefinekeys 2016/05/16 v1.4 Define keys (HO)
+))
+(/usr/local/texlive/2016/texmf-dist/tex/latex/oberdiek/kvoptions.sty
+Package: kvoptions 2016/05/16 v3.12 Key value format for package options (HO)
+
+(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/kvsetkeys.sty
+Package: kvsetkeys 2016/05/16 v1.17 Key value parser (HO)
+
+(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/etexcmds.sty
+Package: etexcmds 2016/05/16 v1.6 Avoid name clashes with e-TeX commands (HO)
+Package etexcmds Info: Could not find \expanded.
+(etexcmds)             That can mean that you are not using pdfTeX 1.50 or
+(etexcmds)             that some package has redefined \expanded.
+(etexcmds)             In the latter case, load this package earlier.
+)))
+Package grfext Info: Graphics extension search list:
+(grfext)             [.png,.pdf,.jpg,.mps,.jpeg,.jbig2,.jb2,.PNG,.PDF,.JPG,.JPE
+G,.JBIG2,.JB2,.eps]
+(grfext)             \AppendGraphicsExtensions on input line 456.
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
+File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
+e
+))
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <17.28> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 100.
+LaTeX Font Info:    Try loading font information for OT1+phv on input line 100.
+
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/psnfss/ot1phv.fd
+File: ot1phv.fd 2001/06/04 scalable font definitions for OT1/phv.
+) (./abs.tex
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <12> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 1.
+Missing character: There is no √ in font ptmr7t!
+Missing character: There is no ó in font ptmr7t!
+Missing character: There is no ‚ in font ptmr7t!
+Missing character: There is no Ä in font ptmr7t!
+Missing character: There is no ì in font ptmr7t!
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <10> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 18.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <10> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 18.
+)
+(./intro.tex
+Package epstopdf Info: Source file: <eps/phoenix_speedup.eps>
+(epstopdf)                    date: 2016-12-14 19:42:07
+(epstopdf)                    size: 27348 bytes
+(epstopdf)             Output file: <eps/phoenix_speedup-eps-converted-to.pdf>
+(epstopdf)                    date: 2016-12-14 19:43:57
+(epstopdf)                    size: 17130 bytes
+(epstopdf)             Command: <repstopdf --outfile=eps/phoenix_speedup-eps-co
+nverted-to.pdf eps/phoenix_speedup.eps>
+(epstopdf)             \includegraphics on input line 37.
+Package epstopdf Info: Output file is already uptodate.
+
+<eps/phoenix_speedup-eps-converted-to.pdf, id=1, 411.5375pt x 292.09125pt>
+File: eps/phoenix_speedup-eps-converted-to.pdf Graphic file (type pdf)
+
+<use eps/phoenix_speedup-eps-converted-to.pdf>
+Package pdftex.def Info: eps/phoenix_speedup-eps-converted-to.pdf used on input
+ line 37.
+(pdftex.def)             Requested size: 226.79846pt x 160.97157pt.
+ [1{/usr/local/texlive/2016/texmf-var/fonts/map/pdftex/updmap/pdftex.map}
+
+
+ <./eps/phoenix_speedup-eps-converted-to.pdf>]
+LaTeX Font Info:    Try loading font information for OMS+ptm on input line 106.
+
+ (/usr/local/texlive/2016/texmf-dist/tex/latex/psnfss/omsptm.fd
+File: omsptm.fd 
+)
+LaTeX Font Info:    Font shape `OMS/ptm/m/n' in size <9> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 106.
+)
+(./back.tex
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 19.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 19.
+
+Underfull \hbox (badness 1038) in paragraph at lines 24--32
+\OT1/ptm/m/n/10 Pthreads[[]]; Phoenix stores the in-ter-me-di-ate key-value
+ []
+
+Package epstopdf Info: Source file: <eps/phoenix_intermediate.eps>
+(epstopdf)                    date: 2016-11-09 21:04:24
+(epstopdf)                    size: 228901 bytes
+(epstopdf)             Output file: <eps/phoenix_intermediate-eps-converted-to.
+pdf>
+(epstopdf)                    date: 2016-12-03 10:26:59
+(epstopdf)                    size: 64185 bytes
+(epstopdf)             Command: <repstopdf --outfile=eps/phoenix_intermediate-e
+ps-converted-to.pdf eps/phoenix_intermediate.eps>
+(epstopdf)             \includegraphics on input line 40.
+Package epstopdf Info: Output file is already uptodate.
+
+<eps/phoenix_intermediate-eps-converted-to.pdf, id=14, 2002.48125pt x 911.405pt
+>
+File: eps/phoenix_intermediate-eps-converted-to.pdf Graphic file (type pdf)
+ <use eps/phoenix_intermediate-eps-converted-to.pdf>
+Package pdftex.def Info: eps/phoenix_intermediate-eps-converted-to.pdf used on 
+input line 40.
+(pdftex.def)             Requested size: 226.79846pt x 103.21703pt.
+ [2 <./eps/phoenix_intermediate-eps-converted-to.pdf>]
+Missing character: There is no ‚ in font ptmr7t!
+Missing character: There is no Ä in font ptmr7t!
+Missing character: There is no ô in font ptmr7t!
+) (./design.tex
+Overfull \hbox (5.77745pt too wide) in paragraph at lines 4--7
+\OT1/ptm/m/n/10 In this sec-tion, we first in-ves-ti-gate the main fac-tor of P
+hoenix's
+ []
+
+Package epstopdf Info: Source file: <eps/phoenix_spinlock.eps>
+(epstopdf)                    date: 2016-12-09 18:26:42
+(epstopdf)                    size: 73278 bytes
+(epstopdf)             Output file: <eps/phoenix_spinlock-eps-converted-to.pdf>
+
+(epstopdf)                    date: 2016-12-09 18:26:57
+(epstopdf)                    size: 39657 bytes
+(epstopdf)             Command: <repstopdf --outfile=eps/phoenix_spinlock-eps-c
+onverted-to.pdf eps/phoenix_spinlock.eps>
+(epstopdf)             \includegraphics on input line 61.
+Package epstopdf Info: Output file is already uptodate.
+<eps/phoenix_spinlock-eps-converted-to.pdf, id=25, 458.71375pt x 303.1325pt>
+File: eps/phoenix_spinlock-eps-converted-to.pdf Graphic file (type pdf)
+
+<use eps/phoenix_spinlock-eps-converted-to.pdf>
+Package pdftex.def Info: eps/phoenix_spinlock-eps-converted-to.pdf used on inpu
+t line 61.
+(pdftex.def)             Requested size: 226.79846pt x 149.8776pt.
+ [3 <./eps/phoenix_spinlock-eps-converted-to.pdf>] (./chanapi.tex
+Underfull \hbox (badness 10000) in alignment at lines 48--48
+[][] 
+ []
+
+
+Overfull \hbox (6.96277pt too wide) in paragraph at lines 48--50
+[][]
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 48--50
+
+ []
+
+)
+Package epstopdf Info: Source file: <eps/chan_extend.eps>
+(epstopdf)                    date: 2016-12-09 18:26:42
+(epstopdf)                    size: 2961589 bytes
+(epstopdf)             Output file: <eps/chan_extend-eps-converted-to.pdf>
+(epstopdf)                    date: 2016-12-09 18:26:57
+(epstopdf)                    size: 434220 bytes
+(epstopdf)             Command: <repstopdf --outfile=eps/chan_extend-eps-conver
+ted-to.pdf eps/chan_extend.eps>
+(epstopdf)             \includegraphics on input line 236.
+Package epstopdf Info: Output file is already uptodate.
+ <eps/chan_extend-eps-converted-to.pdf, id=31, 296.10625pt x 140.525pt>
+File: eps/chan_extend-eps-converted-to.pdf Graphic file (type pdf)
+
+<use eps/chan_extend-eps-converted-to.pdf>
+Package pdftex.def Info: eps/chan_extend-eps-converted-to.pdf used on input lin
+e 236.
+(pdftex.def)             Requested size: 226.79846pt x 107.63635pt.
+
+Underfull \hbox (badness 1226) in paragraph at lines 254--263
+[]\OT1/ptm/m/n/10 In gen-eral producer-consumer model, if the chan-nel
+ []
+
+[4 <./eps/chan_extend-eps-converted-to.pdf>]
+Overfull \hbox (4.6577pt too wide) in paragraph at lines 297--302
+[]\OT1/ptm/m/n/10 In con-clu-sion, we de-sign a scal-able thread model (\OT1/pt
+m/b/it/10 Sthread\OT1/ptm/m/n/10 )
+ []
+
+) (./runtime.tex
+Package epstopdf Info: Source file: <eps/dmr_workflow.eps>
+(epstopdf)                    date: 2016-12-14 19:42:07
+(epstopdf)                    size: 83566 bytes
+(epstopdf)             Output file: <eps/dmr_workflow-eps-converted-to.pdf>
+(epstopdf)                    date: 2016-12-14 19:43:57
+(epstopdf)                    size: 44872 bytes
+(epstopdf)             Command: <repstopdf --outfile=eps/dmr_workflow-eps-conve
+rted-to.pdf eps/dmr_workflow.eps>
+(epstopdf)             \includegraphics on input line 13.
+Package epstopdf Info: Output file is already uptodate.
+
+<eps/dmr_workflow-eps-converted-to.pdf, id=37, 421.575pt x 151.56625pt>
+File: eps/dmr_workflow-eps-converted-to.pdf Graphic file (type pdf)
+
+<use eps/dmr_workflow-eps-converted-to.pdf>
+Package pdftex.def Info: eps/dmr_workflow-eps-converted-to.pdf used on input li
+ne 13.
+(pdftex.def)             Requested size: 226.79846pt x 81.54158pt.
+Missing character: There is no ‚ in font ptmr7t!
+Missing character: There is no Ä in font ptmr7t!
+Missing character: There is no ô in font ptmr7t!
+Missing character: There is no ‚ in font ptmr7t!
+Missing character: There is no Ä in font ptmr7t!
+Missing character: There is no ô in font ptmr7t!
+
+Underfull \hbox (badness 1077) in paragraph at lines 164--170
+[]\OT1/ptm/m/n/10 We think a good producer-consumer model need to
+ []
+
+[5 <./eps/dmr_workflow-eps-converted-to.pdf>]
+Package epstopdf Info: Source file: <eps/dmr_channel.eps>
+(epstopdf)                    date: 2016-12-07 19:00:23
+(epstopdf)                    size: 31759 bytes
+(epstopdf)             Output file: <eps/dmr_channel-eps-converted-to.pdf>
+(epstopdf)                    date: 2016-12-07 19:17:30
+(epstopdf)                    size: 18250 bytes
+(epstopdf)             Command: <repstopdf --outfile=eps/dmr_channel-eps-conver
+ted-to.pdf eps/dmr_channel.eps>
+(epstopdf)             \includegraphics on input line 173.
+Package epstopdf Info: Output file is already uptodate.
+
+<eps/dmr_channel-eps-converted-to.pdf, id=43, 321.2pt x 47.17625pt>
+File: eps/dmr_channel-eps-converted-to.pdf Graphic file (type pdf)
+
+<use eps/dmr_channel-eps-converted-to.pdf>
+Package pdftex.def Info: eps/dmr_channel-eps-converted-to.pdf used on input lin
+e 173.
+(pdftex.def)             Requested size: 201.59692pt x 29.61032pt.
+Package epstopdf Info: Source file: <eps/dmr_hash_buffer.eps>
+(epstopdf)                    date: 2016-11-30 20:45:34
+(epstopdf)                    size: 67317 bytes
+(epstopdf)             Output file: <eps/dmr_hash_buffer-eps-converted-to.pdf>
+(epstopdf)                    date: 2016-12-03 10:27:02
+(epstopdf)                    size: 34802 bytes
+(epstopdf)             Command: <repstopdf --outfile=eps/dmr_hash_buffer-eps-co
+nverted-to.pdf eps/dmr_hash_buffer.eps>
+(epstopdf)             \includegraphics on input line 271.
+Package epstopdf Info: Output file is already uptodate.
+
+<eps/dmr_hash_buffer-eps-converted-to.pdf, id=44, 393.47pt x 152.57pt>
+File: eps/dmr_hash_buffer-eps-converted-to.pdf Graphic file (type pdf)
+
+<use eps/dmr_hash_buffer-eps-converted-to.pdf>
+Package pdftex.def Info: eps/dmr_hash_buffer-eps-converted-to.pdf used on input
+ line 271.
+(pdftex.def)             Requested size: 252.0pt x 97.7143pt.
+
+Overfull \hbox (12.0pt too wide) in paragraph at lines 271--272
+ [][] 
+ []
+
+) (./eval.tex
+Missing character: There is no √ in font ptmr7t!
+Missing character: There is no ó in font ptmr7t!
+Missing character: There is no ‚ in font ptmr7t!
+Missing character: There is no Ä in font ptmr7t!
+Missing character: There is no ô in font ptmr7t!
+Missing character: There is no ‚ in font ptmr7t!
+Missing character: There is no Ä in font ptmr7t!
+Missing character: There is no ú in font ptmr7t!
+Missing character: There is no ‚ in font ptmr7t!
+Missing character: There is no Ä in font ptmr7t!
+Missing character: There is no ù in font ptmr7t!
+Missing character: There is no ‚ in font ptmr7t!
+Missing character: There is no Ä in font ptmr7t!
+Missing character: There is no ú in font ptmr7t!
+Missing character: There is no ‚ in font ptmr7t!
+Missing character: There is no Ä in font ptmr7t!
+Missing character: There is no ù in font ptmr7t!
+ [6 <./eps/dmr_channel-eps-converted-to.pdf> <./eps/dmr_hash_buffer-eps-convert
+ed-to.pdf>]
+Package epstopdf Info: Source file: <eps/phoenix_speedup_jemalloc.eps>
+(epstopdf)                    date: 2016-12-16 11:28:44
+(epstopdf)                    size: 37618 bytes
+(epstopdf)             Output file: <eps/phoenix_speedup_jemalloc-eps-converted
+-to.pdf>
+(epstopdf)                    date: 2016-12-16 11:36:56
+(epstopdf)                    size: 22666 bytes
+(epstopdf)             Command: <repstopdf --outfile=eps/phoenix_speedup_jemall
+oc-eps-converted-to.pdf eps/phoenix_speedup_jemalloc.eps>
+(epstopdf)             \includegraphics on input line 25.
+Package epstopdf Info: Output file is already uptodate.
+
+<eps/phoenix_speedup_jemalloc-eps-converted-to.pdf, id=52, 406.51875pt x 314.17
+375pt>
+File: eps/phoenix_speedup_jemalloc-eps-converted-to.pdf Graphic file (type pdf)
+
+ <use eps/phoenix_speedup_jemalloc-eps-converted-to.pdf>
+Package pdftex.def Info: eps/phoenix_speedup_jemalloc-eps-converted-to.pdf used
+ on input line 25.
+(pdftex.def)             Requested size: 226.79846pt x 175.27933pt.
+Package epstopdf Info: Source file: <eps/phoenix_spinlock_jemalloc.eps>
+(epstopdf)                    date: 2016-12-16 11:28:44
+(epstopdf)                    size: 51539 bytes
+(epstopdf)             Output file: <eps/phoenix_spinlock_jemalloc-eps-converte
+d-to.pdf>
+(epstopdf)                    date: 2016-12-16 11:36:57
+(epstopdf)                    size: 29820 bytes
+(epstopdf)             Command: <repstopdf --outfile=eps/phoenix_spinlock_jemal
+loc-eps-converted-to.pdf eps/phoenix_spinlock_jemalloc.eps>
+(epstopdf)             \includegraphics on input line 66.
+Package epstopdf Info: Output file is already uptodate.
+
+<eps/phoenix_spinlock_jemalloc-eps-converted-to.pdf, id=53, 411.5375pt x 289.08
+pt>
+File: eps/phoenix_spinlock_jemalloc-eps-converted-to.pdf Graphic file (type pdf
+)
+ <use eps/phoenix_spinlock_jemalloc-eps-converted-to.pdf>
+Package pdftex.def Info: eps/phoenix_spinlock_jemalloc-eps-converted-to.pdf use
+d on input line 66.
+(pdftex.def)             Requested size: 226.79846pt x 159.31207pt.
+Package epstopdf Info: Source file: <eps/dmr_time_array.eps>
+(epstopdf)                    date: 2016-12-05 14:14:20
+(epstopdf)                    size: 36735 bytes
+(epstopdf)             Output file: <eps/dmr_time_array-eps-converted-to.pdf>
+(epstopdf)                    date: 2016-12-07 19:17:31
+(epstopdf)                    size: 20764 bytes
+(epstopdf)             Command: <repstopdf --outfile=eps/dmr_time_array-eps-con
+verted-to.pdf eps/dmr_time_array.eps>
+(epstopdf)             \includegraphics on input line 93.
+Package epstopdf Info: Output file is already uptodate.
+
+<eps/dmr_time_array-eps-converted-to.pdf, id=54, 455.7025pt x 256.96pt>
+File: eps/dmr_time_array-eps-converted-to.pdf Graphic file (type pdf)
+
+<use eps/dmr_time_array-eps-converted-to.pdf>
+Package pdftex.def Info: eps/dmr_time_array-eps-converted-to.pdf used on input 
+line 93.
+(pdftex.def)             Requested size: 226.79846pt x 127.88762pt.
+Package epstopdf Info: Source file: <eps/dmr_time_jemalloc.eps>
+(epstopdf)                    date: 2016-12-05 14:14:20
+(epstopdf)                    size: 34203 bytes
+(epstopdf)             Output file: <eps/dmr_time_jemalloc-eps-converted-to.pdf
+>
+(epstopdf)                    date: 2016-12-07 19:17:31
+(epstopdf)                    size: 19519 bytes
+(epstopdf)             Command: <repstopdf --outfile=eps/dmr_time_jemalloc-eps-
+converted-to.pdf eps/dmr_time_jemalloc.eps>
+(epstopdf)             \includegraphics on input line 108.
+Package epstopdf Info: Output file is already uptodate.
+
+<eps/dmr_time_jemalloc-eps-converted-to.pdf, id=55, 455.7025pt x 255.95625pt>
+File: eps/dmr_time_jemalloc-eps-converted-to.pdf Graphic file (type pdf)
+
+<use eps/dmr_time_jemalloc-eps-converted-to.pdf>
+Package pdftex.def Info: eps/dmr_time_jemalloc-eps-converted-to.pdf used on inp
+ut line 108.
+(pdftex.def)             Requested size: 226.79846pt x 127.38806pt.
+ [7 <./eps/phoenix_speedup_jemalloc-eps-converted-to.pdf> <./eps/phoenix_spinlo
+ck_jemalloc-eps-converted-to.pdf> <./eps/dmr_time_array-eps-converted-to.pdf> <
+./eps/dmr_time_jemalloc-eps-converted-to.pdf>]
+Package epstopdf Info: Source file: <eps/dmr_spinlock.eps>
+(epstopdf)                    date: 2016-12-14 19:42:07
+(epstopdf)                    size: 63656 bytes
+(epstopdf)             Output file: <eps/dmr_spinlock-eps-converted-to.pdf>
+(epstopdf)                    date: 2016-12-14 19:43:58
+(epstopdf)                    size: 35348 bytes
+(epstopdf)             Command: <repstopdf --outfile=eps/dmr_spinlock-eps-conve
+rted-to.pdf eps/dmr_spinlock.eps>
+(epstopdf)             \includegraphics on input line 210.
+Package epstopdf Info: Output file is already uptodate.
+
+<eps/dmr_spinlock-eps-converted-to.pdf, id=68, 476.78125pt x 311.1625pt>
+File: eps/dmr_spinlock-eps-converted-to.pdf Graphic file (type pdf)
+
+<use eps/dmr_spinlock-eps-converted-to.pdf>
+Package pdftex.def Info: eps/dmr_spinlock-eps-converted-to.pdf used on input li
+ne 210.
+(pdftex.def)             Requested size: 226.79846pt x 148.01738pt.
+
+Overfull \hbox (12.0376pt too wide) in paragraph at lines 215--218
+\OT1/ptm/m/n/10 eval-u-ated us-ing the ex-e-cu-tion time per-cent of [][]ticket
+[]spin[]lock.
+ []
+
+Package epstopdf Info: Source file: <eps/dmr_speedup.eps>
+(epstopdf)                    date: 2016-12-14 19:42:07
+(epstopdf)                    size: 39173 bytes
+(epstopdf)             Output file: <eps/dmr_speedup-eps-converted-to.pdf>
+(epstopdf)                    date: 2016-12-14 19:43:58
+(epstopdf)                    size: 23337 bytes
+(epstopdf)             Command: <repstopdf --outfile=eps/dmr_speedup-eps-conver
+ted-to.pdf eps/dmr_speedup.eps>
+(epstopdf)             \includegraphics on input line 221.
+Package epstopdf Info: Output file is already uptodate.
+<eps/dmr_speedup-eps-converted-to.pdf, id=69, 363.3575pt x 287.0725pt>
+File: eps/dmr_speedup-eps-converted-to.pdf Graphic file (type pdf)
+
+<use eps/dmr_speedup-eps-converted-to.pdf>
+Package pdftex.def Info: eps/dmr_speedup-eps-converted-to.pdf used on input lin
+e 221.
+(pdftex.def)             Requested size: 226.79846pt x 179.1877pt.
+Package epstopdf Info: Source file: <eps/smr_diff_buffer.eps>
+(epstopdf)                    date: 2016-12-16 11:28:44
+(epstopdf)                    size: 38750 bytes
+(epstopdf)             Output file: <eps/smr_diff_buffer-eps-converted-to.pdf>
+(epstopdf)                    date: 2016-12-16 11:36:57
+(epstopdf)                    size: 22104 bytes
+(epstopdf)             Command: <repstopdf --outfile=eps/smr_diff_buffer-eps-co
+nverted-to.pdf eps/smr_diff_buffer.eps>
+(epstopdf)             \includegraphics on input line 278.
+Package epstopdf Info: Output file is already uptodate.
+
+<eps/smr_diff_buffer-eps-converted-to.pdf, id=70, 357.335pt x 205.76875pt>
+File: eps/smr_diff_buffer-eps-converted-to.pdf Graphic file (type pdf)
+
+<use eps/smr_diff_buffer-eps-converted-to.pdf>
+Package pdftex.def Info: eps/smr_diff_buffer-eps-converted-to.pdf used on input
+ line 278.
+(pdftex.def)             Requested size: 226.79846pt x 130.60204pt.
+Package epstopdf Info: Source file: <eps/env_init.eps>
+(epstopdf)                    date: 2016-12-14 19:42:07
+(epstopdf)                    size: 97001 bytes
+(epstopdf)             Output file: <eps/env_init-eps-converted-to.pdf>
+(epstopdf)                    date: 2016-12-14 19:43:59
+(epstopdf)                    size: 51731 bytes
+(epstopdf)             Command: <repstopdf --outfile=eps/env_init-eps-converted
+-to.pdf eps/env_init.eps>
+(epstopdf)             \includegraphics on input line 321.
+Package epstopdf Info: Output file is already uptodate.
+
+<eps/env_init-eps-converted-to.pdf, id=71, 658.46pt x 293.095pt>
+File: eps/env_init-eps-converted-to.pdf Graphic file (type pdf)
+
+<use eps/env_init-eps-converted-to.pdf>
+Package pdftex.def Info: eps/env_init-eps-converted-to.pdf used on input line 3
+21.
+(pdftex.def)             Requested size: 252.0pt x 112.16884pt.
+
+Overfull \hbox (12.0pt too wide) in paragraph at lines 321--322
+ [][] 
+ []
+
+[8 <./eps/dmr_spinlock-eps-converted-to.pdf> <./eps/dmr_speedup-eps-converted-t
+o.pdf> <./eps/smr_diff_buffer-eps-converted-to.pdf>]
+Package epstopdf Info: Source file: <eps/dmr_hist_init.eps>
+(epstopdf)                    date: 2016-12-07 19:00:23
+(epstopdf)                    size: 67510 bytes
+(epstopdf)             Output file: <eps/dmr_hist_init-eps-converted-to.pdf>
+(epstopdf)                    date: 2016-12-07 19:17:32
+(epstopdf)                    size: 37707 bytes
+(epstopdf)             Command: <repstopdf --outfile=eps/dmr_hist_init-eps-conv
+erted-to.pdf eps/dmr_hist_init.eps>
+(epstopdf)             \includegraphics on input line 340.
+Package epstopdf Info: Output file is already uptodate.
+
+<eps/dmr_hist_init-eps-converted-to.pdf, id=81, 484.81125pt x 296.10625pt>
+File: eps/dmr_hist_init-eps-converted-to.pdf Graphic file (type pdf)
+
+<use eps/dmr_hist_init-eps-converted-to.pdf>
+Package pdftex.def Info: eps/dmr_hist_init-eps-converted-to.pdf used on input l
+ine 340.
+(pdftex.def)             Requested size: 226.79846pt x 138.52383pt.
+Package epstopdf Info: Source file: <eps/dmr_lr_init.eps>
+(epstopdf)                    date: 2016-12-07 19:00:23
+(epstopdf)                    size: 48962 bytes
+(epstopdf)             Output file: <eps/dmr_lr_init-eps-converted-to.pdf>
+(epstopdf)                    date: 2016-12-07 19:17:32
+(epstopdf)                    size: 28046 bytes
+(epstopdf)             Command: <repstopdf --outfile=eps/dmr_lr_init-eps-conver
+ted-to.pdf eps/dmr_lr_init.eps>
+(epstopdf)             \includegraphics on input line 344.
+Package epstopdf Info: Output file is already uptodate.
+
+<eps/dmr_lr_init-eps-converted-to.pdf, id=82, 476.78125pt x 266.9975pt>
+File: eps/dmr_lr_init-eps-converted-to.pdf Graphic file (type pdf)
+
+<use eps/dmr_lr_init-eps-converted-to.pdf>
+Package pdftex.def Info: eps/dmr_lr_init-eps-converted-to.pdf used on input lin
+e 344.
+(pdftex.def)             Requested size: 226.79846pt x 127.00845pt.
+) (./related.tex
+Missing character: There is no ‚ in font ptmr7t!
+Missing character: There is no Ä in font ptmr7t!
+Missing character: There is no ú in font ptmr7t!
+Missing character: There is no ‚ in font ptmr7t!
+Missing character: There is no Ä in font ptmr7t!
+Missing character: There is no ù in font ptmr7t!
+ [9 <./eps/env_init-eps-converted-to.pdf> <./eps/dmr_hist_init-eps-converted-to
+.pdf> <./eps/dmr_lr_init-eps-converted-to.pdf>]) (./concl.tex) (./main.bbl
+LaTeX Font Info:    Try loading font information for OT1+pcr on input line 20.
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/psnfss/ot1pcr.fd
+File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
+)
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <9> on input line 20.
+
+Underfull \hbox (badness 2277) in paragraph at lines 24--28
+[]\OT1/ptm/m/n/9 S. Boyd-Wickizer, H. Chen, R. Chen, Y. Mao, M. F.
+ []
+
+
+Underfull \hbox (badness 6510) in paragraph at lines 80--85
+[]\OT1/ptm/m/n/9 W. Gloger.  Dy-namic mem-ory al-lo-ca-tor im-ple-men-
+ []
+
+
+Underfull \hbox (badness 4366) in paragraph at lines 80--85
+\OT1/ptm/m/n/9 ta-tions in linux sys-tem li-braries, May 2006.  URL
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 80--85
+\OT1/pcr/m/n/9 http : / / www . malloc . de / en / index . html$\OT1/ptm/m/n/9 
+.
+ []
+
+) [10] (./main.aux) ) 
+Here is how much of TeX's memory you used:
+ 3236 strings out of 493014
+ 46155 string characters out of 6133351
+ 116943 words of memory out of 5000000
+ 6668 multiletter control sequences out of 15000+600000
+ 26992 words of font info for 51 fonts, out of 8000000 for 9000
+ 1141 hyphenation exceptions out of 8191
+ 38i,10n,35p,579b,362s stack positions out of 5000i,500n,10000p,200000b,80000s
+{/usr/local/texlive/2016/texmf-dist/fonts/enc/dvips/base/8
+r.enc}</usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10
+.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.p
+fb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pf
+b></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb>
+</usr/local/texlive/2016/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr/lo
+cal/texlive/2016/texmf-dist/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/local/tex
+live/2016/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2016/
+texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></usr/local/texlive/2016/texmf-dis
+t/fonts/type1/urw/times/utmr8a.pfb></usr/local/texlive/2016/texmf-dist/fonts/ty
+pe1/urw/times/utmri8a.pfb>
+Output written on main.pdf (10 pages, 1060500 bytes).
+PDF statistics:
+ 130 PDF objects out of 1000 (max. 8388607)
+ 89 compressed objects within 1 object stream
+ 0 named destinations out of 1000 (max. 500000)
+ 86 words of extra memory for PDF output out of 10000 (max. 10000000)
+
