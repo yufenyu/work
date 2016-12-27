@@ -1,0 +1,8 @@
+文件介绍:
+
+|----des.tex是使用Pthreads+queue来实现DetMP接口的设计文档。
+|----src(基于des.tex设计文档写的实现代码)
+|-------detmp-pthreads.h
+|-------detmp-pthreads.c
+
+

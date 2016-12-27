@@ -1,0 +1,262 @@
+\section{使用spmc channel编写的应用程序用到的接口和数据结构}
+\subsection{dedup-DetMP和DMR等应用程序中用到的接口}
+1.在我们使用spmc channel来编写dedup,DMR(DMR是我们课题组做的一个确定性的MapReduce)等应用程序时，均使用到了
+spmc channel提供的一些接口。这些接口总结如表\ref{tab:DetMPInter}所示。
+
+\bluet{注:}在spmc channel的实现中，
+表中列出的spmcchan\_t的类型为int，spaceid\_t和tid\_t的类型均为uint8\_t。
+这里我们记使用spmc channel实现的dedup为dedup-DetMP,用pthreads+queue实现的dedup为dedup-pthreads。
+\begin{table}[!h]
+\begin{footnotesize}
+  \caption{dedup-DetMP等应用程序使用到的spmc channel提供的接口}
+  \begin{tabularx}{1.0\textwidth}{|p{0.3\textwidth}|p{0.63\textwidth}|}
+  \hline
+  \textbf{接口名称} & \textbf{接口描述}\\
+  \hline
+  void spmc\_init(int nthreads) & 初始化SPMC环境，nthreads指明了内部创建的space的数目。\\
+  \hline  
+  void spmc\_destroy() &这个接口用于注销spmc环境。\\
+  \hline
+  spaceid\_t thread\_alloc(tid\_t gtid) & 分配一个相对编号为gtid的线程 \\
+  \hline
+  tid\_t thread\_start(spaceid\_t idx, void *(*fn)(void *), void *arg) & 
+  派发一个space编号为idx的线程去做fn任务，arg是传递给fn函数的参数。\\
+  \hline
+  void thread\_join(spaceid\_t idx) & 等待space编号为idx的线程完成任务\\
+  \hline
+  int chan\_alloc(int nino)&分配nino个channel,返回分配的channel的编号\\
+  \hline
+  int chan\_setprod(spmcchan\_t cino, spaceid\_t dsid, bool cons) & 
+  将相对编号为dsid的线程设置为编号为cino的channel的生产者，cons表示当这个线程写完之后是否成为它的消费者。\\
+  \hline
+  int chan\_setcons(spmcchan\_t cino, spaceid\_t dsid) & 
+  将相对编号为dsid的线程设置为编号为cino的channel的消费者\\
+  \hline
+  chansize\_t chan\_send(spmcchan\_t cino, void *buf, size\_t nbyte)& 
+  将起始地址为buf的数据发送到编号为cino的channel中，发送的消息大小为nbyte字节。\\
+  \hline
+  size\_t chan\_recv(spmcchan\_t cino, void *buf)& 
+  从编号为cino的channel中接收消息，接收的消息放在buf开始的内存中。\\      
+  \hline
+ \end{tabularx}
+\label{tab:DetMPInter}
+\end{footnotesize}
+\end{table}
+
+2.对于DMR而言，除了使用了表\ref{tab:DetMPInter}列出的接口外，
+它还额外使用了表\ref{tab:DMRInter}列出的接口，使用这些接口的原因见
+表中的接口描述部分。
+\begin{table}[!h]
+\begin{footnotesize}
+  \caption{DMR额外向应用程序提供的接口}
+  \begin{tabularx}{1.2\textwidth}{|p{0.32\textwidth}|p{0.81\textwidth}|}
+  \hline
+  \textbf{接口名称} & \textbf{接口描述}\\
+  \hline
+  void spmc\_set\_copyargs(int flag, int sz) & 应用程序调用这个接口，
+  以向DMR表明某个阶段的线程产生的key或者value指向私有堆，
+  而后面阶段的线程需要key或者value指针指向的内容。
+  由于DMR底层是基于DetMP来实现的,而DetMP中每个线程是私有的，为了让某个线程可以看见另外一个线程
+  更新的堆变量，我们增加了这个接口。\\
+  \hline
+  void spmc\_set\_shareargs(void *addr, int sz) & 应用程序调用这个接口，
+  以向DMR表明某个全局变量在MapReduce过程中会发生改变(即MapReduce中派发
+  的线程会更新这个全局变量)，而主线程在MapReduce调用结束后需要读取这个
+  全局变量的值。DMR底层基于的DetMP使用了进程模拟线程的方式来达到空间隔离，
+  因此各个进程更新的全局变量会变成私有的区域，而父进程看不见。
+  为了让父进程可以看见子进程更新的值，我们提供了这个接口。
+  \\
+  \hline
+ \end{tabularx}
+\label{tab:DMRInter}
+\end{footnotesize}
+\end{table}
+
+\section{基于pthreads+queue实现spmc channel提供的接口}
+\paragraph{\hei{我们基于pthreads+queue来实现spmc channel的\bluet{思路}为}}:
+\begin{itemize}
+\item{定义一个全局的数据结构来保存queue和线程id等信息。}
+\item{复用表\ref{tab:DetMPInter}和表\ref{tab:DMRInter}中提供的接口，但是给出基于pthread+queue的实现。}
+\end{itemize}
+
+
+下面先给出queue的数据结构定义和它提供的接口、保存queue和线程id信息的数据结构定义，
+然后给出spmc channel给出的接口和queue给出的接口的映射关系。
+
+\subsection{\bluet{queue和保存全局信息的数据结构定义以及pthreads+queue提供的接口}}
+\paragraph{\bluet{queue的数据结构定义:}}
+\label{sec:que}
+queue的数据结构定义如代码\ref{lst:que}所示。队列的每个元素为指针类型，即void *类型。
+\begin{lstlisting}[caption={data struct of queue},label={lst:que},float]
+typedef struct queue {
+  int head, tail;//head and tail of queue.
+  void ** data;//`存储数据项，每个数据项为指针，即void*类型。`
+  int size;//队列的大小
+  pthread_mutex_t mutex;//`和empty,full一样，均用于控制线程的并发访问`
+  pthread_cond_t empty, full;
+}queue_t;
+\end{lstlisting}
+
+\paragraph{\bluet{queue提供的接口:}}
+queue提供的接口如表\ref{tab:que}所示，主要操作为队列的初始化，入队，出队。
+\begin{table}[!h]
+\begin{footnotesize}
+\caption{queue提供的接口}
+  \begin{tabularx}{0.85\textwidth}{|p{0.32\textwidth}|p{0.46\textwidth}|}
+  \hline
+  \textbf{queue提供的接口名称} & \textbf{描述}\\
+  \hline
+  void queue\_init(struct queue * que, int size)& 初始化一个容量为size的队列que。\\
+  \hline
+  void *enqueue(struct queue* que, void *addr) & addr为指向数据项的指针， enqueue将addr指针存放到队列que中。\\
+  \hline
+  void *dequeue(struct queue * que)  &从队列que中取出一个元素，返回值是一个指向数据项的指针。\\
+  \hline
+ \end{tabularx}
+\label{tab:que}
+\end{footnotesize}
+\end{table}
+
+\paragraph{\bluet{保存线程和队列信息的数据结构定义}}
+\label{sec:global}
+代码\ref{lst:global}列出了保存线程信息和队列信息的数据结构的定义。
+在具体实现时，要定义global\_info\_t类型的全局变量，\redt{记为global\_vars}。
+global\_vars中的每个queue和DetMP中的channel是一一对应的，具体表现为编号为cino的channel
+对应着global\_vars.que[cino]队列。
+同时,DetMP的中每个线程的spaceid和pthreads情况下的pthreadid也是一一对应的，
+具体表现为DetMP中编号为spaceid的线程对应着pthreads中global\_vars.tids[spaceid]线程。
+
+\begin{lstlisting}[caption={`保存线程和队列信息的数据结构`},label={lst:global},float]
+typedef struct global_info {
+  pthread_t* tids;//`保存创建的所有线程编号` 
+  int nth;//`记录当前分配的线程数目`
+  struct queue *que[MAX_QUEUENUM];//`保存创建的所有队列信息,`
+  //`MAX\_QUENUM是一个宏,它表示为分配的队列的最大的数目，初始值为1024`
+  int nqueues; //`que数组中已经分配的队列的编号`
+}global_info_t;
+\end{lstlisting}
+
+\paragraph{\bluet{spmc DetMP中定义的数据类型的转换:}}
+spmc中定义了一些数据类型，对于这些数据类型的处理如下:
+
+\begin{itemize}
+\item{spmcchan\_t: 使用宏定义让其变成int类型。\#define spmcchan\_t int。}
+\item{tid\_t: 使用宏定义让其变成pthread\_t类型。 \#define tid pthread\_t。}
+\end{itemize}
+
+\subsection{\bluet{基于pthreads+queue实现DetMP和DMR提供的接口:}}
+我们可以保证原来使用DetMP进行编写的代码不变的情况下，再额外添加一个DetMP-pthreads.c.c文件，
+DetMP-pthreads.c.c文件中对DetMP提供的接口给出了pthreads+queue的实现。
+表\ref{tab:MapInter}列出了对于表\ref{tab:DetMPInter},\ref{tab:DMRInter}给出的接口怎么基于pthreads+queue来实现。
+
+\begin{table}[!h]
+\begin{footnotesize}
+  \caption{基于pthreads+queue实现DetMP和DMR提供的接口}
+  \begin{tabularx}{1.2\textwidth}{|p{0.3\textwidth}|p{0.83\textwidth}|}
+  \hline
+  \textbf{spmc channel提供的接口名称} & \textbf{用pthreads+queue实现时对应的转换}\\
+  \hline
+  void spmc\_init(int nthreads) & 接口不变，内部实现为初始化全局变量global\_vars，
+  主要包括根据传入的参数nthreads给tids成员变量开辟大小为sizeof(pthread\_t)*nthreads的空间，
+  将nth和nqueues置为零。global\_var变量见\ref{sec:global}的介绍。\\
+  \hline   
+  void spmc\_destroy() &接口不变，内部实现为注销在spmc\_init接口中初始化的全局变量。 \\
+  \hline
+  spaceid\_t thread\_alloc(tid\_t gtid) & 
+  接口不变， 接口的语义仍然返回线程的相对id。实现时，返回global\_vars中的nth的当前值。
+  使用pthread+queue实现获得的线程编号和使用spmc DetMP获得的线程编号是相等的。\\  
+  \hline
+  tid\_t thread\_start(spaceid\_t idx, void *(*fn)(void *), void *arg) & 转换成pthread\_create，具体可以使用宏定义。如\#define thread\_start(a,b,c) pthread\_create(\&(global\_vars.tids[a]),NULL,b,c)\\
+  \hline
+  thread\_join(spaceid\_t idx) & 转换成pthread\_join，具体的实现可以用宏定义\#define thread\_join(a, b) pthread\_join(global\_vars.tids[a], b)\\
+  \hline
+  int chan\_alloc(int nino)& 内部返回一个队列的编号，即其在global\_vars中的que数组中的编号。
+  队列的编号和channel的编号是相等的。\\  
+  \hline
+   int chan\_setprod(spmcchan\_t cino, spaceid\_t dsid, bool cons) & 接口不变，内部实现为空.
+  \\
+  \hline
+  int chan\_setcons(spmcchan\_t cino, spaceid\_t dsid) & 接口不变，内部实现为空即可
+  \\
+  \hline
+  chansize\_t chan\_send(spmcchan\_t cino, void *buf, size\_t nbyte); & 
+  接口不变，接口的实现中将buf的数据放入到编号为cino的队列(即global\_vars的que[cino]队列)中，
+  具体操作可以调用enqueue来完成操作。\\
+  \hline
+  size\_t chan\_recv(spmcchan\_t cino, void *buf); & 
+  内部实现为从全局编号为cino的队列(即global\_vars的que[cino]队列)中取数据到buf中，具体可以
+  使用宏定义，如\#define chan\_recv(a, b) (b = dequeue(global\_vars.que[cino]))\\ 
+  \hline 
+  void spmc\_set\_copyargs(int flag, int sz) & 接口不变，内部实现为空即可。因为在pthreads共享内存的情况下，从堆中分配出来的变量是共享的，而不像DMR的情况下是私有的。\\
+  \hline
+  void spmc\_set\_shareargs(void *addr, int sz) & 接口不变，内部实现为空即可。
+   因为在pthreads共享内存的情况下，全局变量是所有线程都可见的。\\  
+  \hline
+ \end{tabularx}
+\label{tab:MapInter}
+\end{footnotesize}
+\end{table}
+
+\subsection{基于pthreads+queue实现的参数设置}
+
+1.目前初始化队列时，一个队列的容量设置为1024*1024*sizeof(void*)。
+这个值为dedup-pthreads版本中设置的值。
+在做dedup-DetMP和dedup-pthreads对比实验时，应该DetMP中channel的大小和队列的大小设置成相同的值。
+
+\subsection{基于pthreads+queue实现detmp接口在实现上遇到的问题}
+\bluet{问题1.chan\_send的实现需要拷贝发送者发送过来的数据。 }
+
+虽然我们用pthreads+queue来实现detmp的接口时，线程之间是共享内存的。
+但是在chan\_send的内部实现时仍然需要从堆中分配出空间，并将发送者发送过来的数据
+拷贝到这个分配的空间中。
+chan\_send的代码如清单\ref{lst:chan_send}所示。
+
+\begin{lstlisting}[{label=lst:chan_send},caption={Implementation of chan\_send}]
+void chan_send(spmcchan_t cino, void *addr, size_t sz){
+  char *data = (char*)malloc(sz);//`从堆中开辟一个空间去`
+  //`存放发送者发送过来的数据`
+  memcpy(data, addr, sz);
+  enqueue(&(global_vars.que[cino]), data);//`将发送者发送过来的数据入队`
+}		
+\end{lstlisting}
+
+这样实现的\bluet{原因}有两个：
+
+1)dedup-detmp实现的代码中，存在一个线程发送给另一个线程的数据是栈变量的情况。
+为了表述方便，我们这里假设线程A发送一个栈变量给线程B。
+在这种情况下，如果不保存发送过来的变量的内容，
+而只是保存变量的地址，则有可能会
+出现在B线程读取这个变量的时候，这个变量已经被A线程释放了,因为
+栈变量在函数调用结束时会被释放掉。
+
+2)在dedup程序中存在如下模式的代码，见代码\ref{lst:heapOpr}。
+\begin{lstlisting}[label={lst:heapOpr},caption={Heap Operation Pattern},numbers=left,float]
+DataProcess(...){
+	...
+	anchor = (char*)malloc(...);
+	chan_send(args->w_ports[qid], anchor, p-anchor);
+	...
+	free(anchor);
+}
+FindAllAnchors(...){
+	...
+	chan_recv(args->r_ports[qid], anchor);
+	...
+}
+\end{lstlisting}
+在代码\ref{lst:heapOpr}中，DataProcess线程从堆中分配空间，
+并将它赋值给anchor,
+然后使用chan\_send将anchor的内容发送给FindAllAnchors线程，
+并最后调用free函数将其分配的空间释放掉。
+而FindAllAnchors线程则使用chan\_recv来接收anchor的内容。
+
+从有这种访问模式的代码来看，如果在用pthreads+queue来实现detmp的接口时不
+拷贝发送数据的内容而是仅传递指针，
+则有可能会出现FindAllAnchors在访问数据的时候，
+该空间已经被DataProcess线程调用free函数给释放掉了。
+
+
+
+
+
+
