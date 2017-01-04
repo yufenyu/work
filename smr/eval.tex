@@ -39,54 +39,54 @@ Then we measure the performance and scalability of \myds compared with \codet{Ph
 
 %Phoenix-jemalloc版本scalability存在的问题
 %Since Phoenix is sensitive to memory allocator\cite{yoo2009phoenix2}, in this subsection, 
-
-\subsubsection{Scalability of Phoenix}
-%We first evaluate the scalability of Phoenix built with jemalloc, a good scalable memory allocator, and than we measure the scalability of \myds to demonstrate the effectivity of \myds.
-
-\begin{figure}[!h!t]  
-	\centering
-	\includegraphics[width=0.45\textwidth]{eps/phoenix_speedup_jemalloc.eps}
-	\caption{speedup of Phoenix-jemalloc}
-	\label{fig:phoenix:speedup:jemalloc}
-\end{figure}
-
-%For linear\_regression (lr) and string\_match (sm),  using 16 or more  cores leads to speedup degradation.
-
-Figure \ref{fig:phoenix:speedup:jemalloc} illustrates the speedup of Phoenix built with jemalloc.
-We observe that applications scale well when the core count increases from 1 to 8.
-However, when the core count increases from 8 to 16 to 32, the speedup sharply degrades for \codet{wc} and from 16 to 32 cores for the other applications.
-%Phoenix performs well with less cores, it can not scale up 16 cores for all applications. 
-%Actually, when cores number exceed 8, the speedup of \codet{wc} and \codet{hist} on Phoenix begin degrading. 
-
-%Phoenix performs well with no more than 16 cores.
-%However, when core number exceed 16, .
-%For lr and sm, the speedup is degraded when cores is greater than 16.
-
-
-%on \codet{hist}, \codet{wc} and \codet{pca} when the number of core is less than 8.
-%As the number of cores increase (from 1 to 8), the performance of Phoenix increase for all cases, i.e., the execution time decreasing. 
-%While For 16 to 32 cores, Phoenix performance keep decreasing with the increase of the number of cores.
-\begin{figure}[!h!t]  
-	\centering
-	\includegraphics[width=0.45\textwidth]{eps/phoenix_spinlock_jemalloc.eps}
-	\caption{speedup of Phoenix-jemalloc}
-	\label{fig:phoenix:spinlock:jemalloc}
-\end{figure}
-The above performance changes can be explained from contending on the shared address space in Linux kernel.
-Therefore, we collect \_\_ticket\_spin\_lock execution time percent information to peek the contention by Linux perf.
-The results as shown in Figure \ref{fig:phoenix:spinlock:jemalloc}, turn out that serious lock contention takes place when increase the number of cores over 8 and as a result execution time will be drastically increased.
-
-
-%When the number of dependent processes increases above the
-%number of cores, serious contending lock takes place,
-%and as a result execution time will be drastically increased.
-%As the number of threads increases from 32 to 33, 
-%there is a significant increase in execution time owing to .
-
-Overall, increasing cores number results in the growth of speedup for Phoenix at low cores.
-However, as more cores were added, the benefit was reversed due to the increased time spent in spinlock.
-The results indicate that in spite of using the scalable memory allocator, Phoenix can not scale up to 16 cores.
-
+%====================================================
+%\subsubsection{Scalability of Phoenix}
+%%We first evaluate the scalability of Phoenix built with jemalloc, a good scalable memory allocator, and than we measure the scalability of \myds to demonstrate the effectivity of \myds.
+%
+%\begin{figure}[!h!t]  
+%	\centering
+%	\includegraphics[width=0.45\textwidth]{eps/phoenix_speedup_jemalloc.eps}
+%	\caption{speedup of Phoenix-jemalloc}
+%	\label{fig:phoenix:speedup:jemalloc}
+%\end{figure}
+%
+%%For linear\_regression (lr) and string\_match (sm),  using 16 or more  cores leads to speedup degradation.
+%
+%Figure \ref{fig:phoenix:speedup:jemalloc} illustrates the speedup of Phoenix built with jemalloc.
+%We observe that applications scale well when the core count increases from 1 to 8.
+%However, when the core count increases from 8 to 16 to 32, the speedup sharply degrades for \codet{wc} and from 16 to 32 cores for the other applications.
+%%Phoenix performs well with less cores, it can not scale up 16 cores for all applications. 
+%%Actually, when cores number exceed 8, the speedup of \codet{wc} and \codet{hist} on Phoenix begin degrading. 
+%
+%%Phoenix performs well with no more than 16 cores.
+%%However, when core number exceed 16, .
+%%For lr and sm, the speedup is degraded when cores is greater than 16.
+%
+%
+%%on \codet{hist}, \codet{wc} and \codet{pca} when the number of core is less than 8.
+%%As the number of cores increase (from 1 to 8), the performance of Phoenix increase for all cases, i.e., the execution time decreasing. 
+%%While For 16 to 32 cores, Phoenix performance keep decreasing with the increase of the number of cores.
+%\begin{figure}[!h!t]  
+%	\centering
+%	\includegraphics[width=0.45\textwidth]{eps/phoenix_spinlock_jemalloc.eps}
+%	\caption{speedup of Phoenix-jemalloc}
+%	\label{fig:phoenix:spinlock:jemalloc}
+%\end{figure}
+%The above performance changes can be explained from contending on the shared address space in Linux kernel.
+%Therefore, we collect \_\_ticket\_spin\_lock execution time percent information to peek the contention by Linux perf.
+%The results as shown in Figure \ref{fig:phoenix:spinlock:jemalloc}, turn out that serious lock contention takes place when increase the number of cores over 8 and as a result execution time will be drastically increased.
+%
+%
+%%When the number of dependent processes increases above the
+%%number of cores, serious contending lock takes place,
+%%and as a result execution time will be drastically increased.
+%%As the number of threads increases from 32 to 33, 
+%%there is a significant increase in execution time owing to .
+%
+%Overall, increasing cores number results in the growth of speedup for Phoenix at low cores.
+%However, as more cores were added, the benefit was reversed due to the increased time spent in spinlock.
+%The results indicate that in spite of using the scalable memory allocator, Phoenix can not scale up to 16 cores.
+%====================================================
 
 %\subsection{Performance and Scalability}
 %描述benchmarks的特点，benchmarks的数据集等
