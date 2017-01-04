@@ -6,7 +6,7 @@
 %一方面，随着多核机器的广泛普及，如何充分利用多核资源成为非常重要的课题，另一方面，现有的很多我们希望充分利用单台机器上的资源，
 
 %目前的现状，需求
-As the prevalence of multicore chips, it is foreseeable that tens to hundreds (even thousands) of cores on a single chip will appear in the near future\cite{Borkar2007core}.
+With the prevalence of multicore chips, it is foreseeable that tens to hundreds (even thousands) of cores on a single chip will appear in the near future\cite{Borkar2007core}.
 However, utilizing multicore sources is still challenging because of the difficulties of parallel programming.
 Specifically, traditional parallel programming techniques require the programmer to manually manage synchronization, load balancing and locality, and explicitly understand the detail of underlying hardware, which is error-prone and complicated. %requests the programmer to understand the detail  of underlying hardware.
 An alternative approach is dependent on a runtime system for concurrency management. 
@@ -43,7 +43,7 @@ Other libraries such as Metis\cite{mao2010metis} , Tiled-mapreduce\cite{chen2010
 %Phoenix存在的问题
 Phoenix exploits shared-memory threads (i.e., Pthread library) to implement parallelism, and the runtime binds each worker to a thread.
 Ideally, adding more threads and cores to the system will bring a linear decreasing in execution time.
-However, we note that the optimized Phoenix \cite{yoo2009phoenix2} scales worse on a 32-core Intel 4× Xeon E7-4820 system running Ubuntu 12.04 with kernel 3.2.14.
+However, we note that the optimized Phoenix \cite{yoo2009phoenix2} (i.e., Phoenix2) scales worse on a 32-core Intel 4× Xeon E7-4820 system running Ubuntu 12.04 with kernel 3.2.14.
 Figure \ref{fig:phoenix:speedup} shows the speedup of the optimized Phoenix runtime.
 % which is measured on our 32-core system (the detail of this system will be given in Section \ref{sec:eval}). 
 We observe that despite the Phoenix runtime is able to process these applications in parallel, none of them scales well beyond 16 cores and most of them actually degrade when the number of cores exceeds 8.
@@ -98,7 +98,7 @@ As a result, the scalability of applications with Phoenix will be limited.
 %To remedy the above problems, we propose a modified MapReduce architecture in which Map and Reduce phase are pipelined to improve the performance, while preserving the programming interfaces of previous MapReduce frameworks.
 To remedy the problems mentioned above, we design a modified MapReduce framework with preserving the programming interfaces of previous MapReduce.
 Firstly, we propose a scalable thread libray (\myth).
-Then based on \myth, this paper presents a modified MapReduce model for multicore, \myds (Scalable MapReduce), which can efficiently scale on multicore system.
+Then based on \myth, this paper presents a scalable MapReduce model for multicore, \myds, which can efficiently scale on multicore system.
 
 %\myds reserves the similar Phoenix programing interfaces as well.
 The main contributions of this paper are concluded as follows:
@@ -106,7 +106,7 @@ The main contributions of this paper are concluded as follows:
 \begin{itemize}
   \item We analyze the important roadblocks that limit scalability of the Phoenix runtime on shared-memory systems. Specifically, we find that the shared address space for multiple threads will be a crucial issue at multicore system.
   
-  \item We develop a scalable thread library, \myth, in which threads run in  the separated memory space to avoid the contention on the shared space. Furthermore, \myth provides the \codet{shared-channel} for the threads to communicate with each others. 
+  \item We develop a scalable thread library, \myth, in which threads run in  the separated memory space to avoid the contention on the shared space. Furthermore, \myth provides the \codet{unboundary-channel} for the threads to communicate with each others. 
 
   \item Base on \myth, we propose a scalable MapReduce model, \myds.
   And \myds pipelines the Map and Reduce phase by adapting a new producer-consumer model, in which producer does not have to wait when the buffer is full. 
