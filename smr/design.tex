@@ -1,10 +1,11 @@
 \section{A Novel Thread Model --- \myth}
 \label{sec:design}
 %这一部分，首先，我们将详细分析Phoenix较差scalability的根本原因，然后针对Phoenix scalability存在的challenge，我们提出可行的解决方案，即构造一种具有较好scalability的thread model。然后详细解释这种新的线程模型的详细设计方案，最后具体的实验部分在section 6
-In this section, we first investigate the main factor of Phoenix's limited scalability, 
-and then present a new thread model (\myth), which can support \myds to achieve good scalability.
-Finally, the detail design and implementation of \myth will be given.
+In this section, we present a new thread model (\myth), which can support \myds to achieve good scalability.
+And then, the detail API of \myth will be given.
+we focus on the design and implementation of an unboundary channel in \myth.
 
+%we first investigate the main factor of Phoenix's limited scalability,
 
 %\subsection{Analyze Scalability of Phoenix}
 %%描述Phoenix 的 pool scalability
@@ -148,14 +149,14 @@ Finally, the detail design and implementation of \myth will be given.
 %这一部分，我们不提生产消费模型，
 %为什么要进行地址空间隔离，通过新的线程模型，我们实现了地址空间隔离，隔离之后有什么好处？相比Phoenix，我们这种新的模型会不会带来开销。
 
-Our goal is to enable the pagefaults to be scalable  for many cores.
+Our goal is to enable the page faults to be scalable for many cores.
 There are some ways to achieve this target. 
 For example, Corey\cite{boyd2008corey} is a scalable operating system for multicore;
-Clements et.al. proposed a scalable address spaces by using rcu balanced trees \cite{Clements2012Scalable};
+Clements et.al. proposed a scalable address spaces by using RCU balanced trees \cite{Clements2012Scalable};
 Andi et.al think process has a better scalability than thread since the process needs not to share the address space with the other processes\cite{Andi2009lmulticore}.
 %applications use processes instead of threads can avoid a single shared address space
 However, modifying operation system is impracticable and employing the process rather than the thread will make sharing become complicated. 
-In order to provide a practicable and simple solution, a key problem to be solved is that how to enable threads to eliminate contention on the per-process read/write semaphore when multiple threads concurrently run pagefaults.
+In order to provide a practicable and simple solution, a key problem to be solved is that how to enable threads to eliminate contention on the per-process read/write semaphore when multiple threads concurrently run page faults and \codet{mmap} operations.
 
 
 
@@ -174,9 +175,9 @@ To address the problem and achieve our goal, we propose a novel thread programmi
 %will be presented in this subsection.
 There are two key points in the design of \myth.
 Firstly, we confine the threads in \myth to run in separate memory spaces to avoid the contention.
-It means that threads in \myth have their local mm\_struct and eliminate the contention of the single semaphore.
+It means that threads in \myth have their local \codet{mmap\_sem} and eliminate the contention of the single semaphore with others thread.
 Secondly, when using the separate memory spaces, communication will be challenging since the threads in \myth can not directly communicate with the other threads like thread based on share space.
-So, we give a \codet{shared-channel} for the threads to communicate with the others in \myth. 
+So, we give a \chan for the threads to communicate with the others in \myth. 
 %Threads in Pthreads share the address space of the process that created it, 
 %while threads in \myth have their own address space,
 %meaning each thread has a mm\_struct.
@@ -189,16 +190,16 @@ So, we give a \codet{shared-channel} for the threads to communicate with the oth
 \label{sec:pm:thread}
 \begin{figure}[htpb]
 \input chanapi.tex
-\caption{Main functions of \myds thread API.}
+\caption{Main functions of \myth thread API}
 \label{fig:api:thread}
 \end{figure}
 
 %mapreduce中是如何使用这个简易的模型进行编程和实现的，这个模型潜在的开销是什么
 Figure \ref{fig:api:thread} lists the main functions of managing threads and channels in \myth.
-In the case of \myds, at initial stage, the master thread invokes \codet{thread\_alloc} to allocate map threads and reduce threads, and then creates the \codet{shared-channel}  between each pair of map and reduce threads by invoking \codet{chan\_alloc}.
+In the case of \myds, at initial stage, the master thread invokes \codet{thread\_alloc} to allocate map threads and reduce threads, and then creates the \chan  between each pair of map and reduce threads by invoking \codet{chan\_alloc}.
 %To set up the shared-channel, the master invokes \codet{chan\_setprod} and \codet{chan\_setcons} to set the map and reduce threads as producers and consumers, respectively. 
 After that, the master invokes \codet{chan\_setprod} and \codet{chan\_setcons} to set the map and reduce threads as producers and consumers for the shared-channel, respectively.
-The producer sends messages to the \codet{shared-channel}, and the consumer receives the messages from it,
+The producer sends messages to the \chan, and the consumer receives the messages from it,
 which is a typical producer-consumer model (we will detail how it will be used in Section 4). 
 Finally, the master starts all threads to work by invoking \codet{thread\_start}.
 
@@ -207,10 +208,10 @@ it also takes extra overhead in comparison to Phoneix. The experiments demonstra
 is concentrate in the initial stage (we will analyze this overhead in Section 5.3). 
 
 
-\subsection{Design of the Channel}
+\subsection{Unboundary Channel}
 %channel的底层实现，以及它无限制的映射机制，想说明的问题是：不需要等待，且没有过多的malloc和free操作带来的开销。
 %Once the producer and consumer thread have been created and channel relationships are set,
-In our design, the \codet{shared-channel} is a virtual memory area, called \code{CHAN} in the producer and consumer address space.
+In our design, the \chan is a virtual memory area, called \code{CHAN} in the producer and consumer address space.
 When the producer invokes \code{chan\_send} to send data, the sent data will be copyed to the \code{CHAN} area.
 And then the consumer reads the data from the \code{CHAN} area  by invoking \code{chan\_recv}.
 There is a pagetable (\code{ptab}) used to store the mapping between \code{CHAN} memory area and physical address, with each mapping as a corresponding page table entry.
@@ -294,7 +295,7 @@ The original page frames will decrease their reference counts and are automatica
 %that consumers may still require. 
 
 
-In conclusion, we design a scalable thread model (\myth) and provide an unbounded \codet{shared-channel} for threads to communicate. This unbounded \codet{shared-channel} is a prominent feature of \myth, which is the main difference between our \myth and the previous works. 
+In conclusion, we design a scalable thread model (\myth) and provide an unbounded \chan for threads to communicate. This unbounded \chan is a prominent feature of \myth, which is the main difference between our \myth and the previous works. 
 We will detail how to sufficiently exploit this feature to implement the scalable MapReduce (\myds)  in Section 4.
 %That means a sender can send any number of messages without blocking or waiting.
 %As a result, system can achieve high throughput.

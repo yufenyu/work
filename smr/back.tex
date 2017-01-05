@@ -44,7 +44,7 @@ two strategies must be carried out to avoid lock contention costs.
 
 By adopting above strategies, Phoenix effectively reduce lock contention costs in applications. 
 However, These strategies limit the performance of Phoenix.
-We will detail next Section. 
+We will detail in next Section. 
 
 \section{Analysis of Phoenix}
 %Phoenix demonstrates tha applications that fit the MapReduce model can perform competitively with parallel code using Pthreads.
@@ -120,8 +120,13 @@ That means most of execution time will be used for waiting but not actual comput
 %However, 
 
 
-\subsection{Multithread scalability}
-In Phoenix, applications will start as many threads as the system's cores.
+\subsection{Contention of the single address space}
+Phoenix utilizes shared-memory multiple threads (i.e., Pthread) to implement parallelism, where all threads of an application share a single address space.
+In most widely used operating systems, such as Linux, an address space consists principally of a set of memory mapping regions.
+Linux use a red-back tree to store these regions. 
+The red-back enables the operating system to find a particular region quickly when a process has have thousands of memory regions \cite{linux}.
+
+Applications will start as many threads as the system's cores.
 Ideally, adding more threads and cores to the runtime would bring about a linear decrease in execution time.
 %However, the parallel scalability of Phoenix is not ideal.
 However, Phoenix can not scale as well as expected.
@@ -148,10 +153,7 @@ Call-graph information shows that spinlock is caused by page faults and \codet{m
 %	\label{fig:phoenix:spinlock}
 %\end{figure}
 
-Phoenix utilizes shared-memory multiple threads (i.e., Pthread) to implement parallelism, where all threads of an application share a single address space.
-In most widely used operating systems, such as Linux, an address space consists principally of a set of memory mapping regions.
-Linux use a red-back tree to store these regions. 
-The red-back enables the operating system to find a particular region quickly when a process has have thousands of memory regions \cite{linux}.
+
 
 %store the memory regions because applications often have thousands of memory regions 
 
@@ -160,7 +162,7 @@ The red-back enables the operating system to find a particular region quickly wh
 %
 %One reason why Linux uses this single semaphore on the address space is that it needs a red-black tree to guarantee $O$(log$n$) lookup time when a process has many mmap memory regions \cite{linux}.
 
-The \codet{mmap} operation creates memory mapping regions and adds them to the region red-back tree. 
+The \codet{mmap} operation creates memory mapping regions and adds them to the region red-back tree in Linux. 
 %munmap removes regions from the tree and invalidates entries in the hardware page table structures. 
 Page faults look up the faulting virtual address in the red-back tree check whether the virtual address is mapped.
 To ensure correct behavior when several threads perform \codet{mmap} and page faults concurrently, Linux use a single read/write semaphore per process (known as \codet{mmap\_sem}).
@@ -171,8 +173,8 @@ Page faults, which acquire the semaphore in read mode, can proceed with each oth
 In Phoenix, benchmarks utilize the mmap() system call to read in input data. 
 Once the user passes the pointer of the mmap() region to runtime as an argument, multiple map threads will concurrently cause page faults in the input data when they invoke map functions.
 %All of these page faults need to access the unique mmap\_sem semaphore, which is local to a process address space. 
-Although mmap() system call in applications will not cause contention,
-there are mmap operations in memory allocator for heap manage.
+\redt{Although mmap() system call in applications will not cause contention,
+there are mmap operations in memory allocator for heap manage.}
 By using \codet{mmap\_sem}, Linux can serialize mmap operations and page faults, while limiting the scalability of multithread applications.
 The contention is intense when there are large amounts of threads,
 which will lead to the parallel scalability degradation on the benchmarks.
@@ -184,23 +186,29 @@ which will lead to the parallel scalability degradation on the benchmarks.
 
 
 
-\subsection{Optimizing Opportunities of Phoenix }
-First, in cluster environment, network bandwidth is the key factor for performance since the map and reduce workers, executed in different machines usually, communicate by the network.
+\subsection{Optimizing opportunities of Phoenix}
+%To avoid lock contention costs when multiple map and reduce workers read/write the shared intermediate data structure, Phoenix adopts two strategies: 
+As described in section \ref{sec:back}, there is a strict barrier between the Map and Reduce phase, requiring that the workers in Reduce phase can be started only when all workers in Map phase has been finished.
+In spite of avoiding lock contention, the barrier becomes an important roadblocks to  performance of Phoenix. 
+On the one hand, the barrier limits parallel computing.
+%therefore this barrier limits parallel computing.
+%which limits parallel computing.
+The execution time of the Map phase is subjected to the slowest map worker, which means that if one of the map workers is slow, then the runtime will need more time.
+%\bluet{If one of a map worker is slow, then the runtime of MapReduce will be need more time.}  
+On the other hand, it is worth mention that the user-defined map functions are usually computation-intensive while the Reduce phase is memory-intensive. Thus, the serialization of the Map and Reduce phase is bad for the utilization of system hardware resource.
+
+In cluster environment, network bandwidth is the key factor for performance since the map and reduce workers, executed in different machines usually, communicate by the network.
 However, when processing MapReduce applications in multicore environment, the data structures shared by multiple threads, instead of the network, are the major performance bottlenecks.
-By using  a share-memory threads model, Pthreads, multiple threads in Phoenix need to share the process's address space\cite{linux}.
-In fact, there is a single lock for per shared address space inside the operating system’s virtual memory system. 
+% based on applications in Phoenix will naturally suffer from serious contended locks.
+%By using a share-memory threads model, multiple threads in Phoenix need to share the process's address space\cite{linux}.
+There is a single lock for per shared address space inside the operating system’s virtual memory system, which we have discussed in the previous section. 
 As a result, multithreaded applications on many-core processors will naturally suffer from serious contended locks.
 This phenomenon will be common for parallel programming with shared-memory multithreading \cite{clements2013radixvm}.
 
 %多核环境下，限制mapreduce性能的关键因素是多线程共享的数据结构。phoenix是基于共享内存的Pthreads多线程编写的，其中每个线程没有自己独立的地址空间，它们需要共享进程的地址空间，在linux中，每个进程地址空间有一个锁对应，当多个线程需要共享时，便会对这个lock竞争，这种现象对于基于共享内存的多线程并行编程非常普片。
 
 %which would be common for parallel programming with shared-memory multithreading.
-Second, there is a strict barrier between the Map and Reduce phase, requiring that the workers in Reduce phase can be started only when all workers in Map phase has been finished, 
-%therefore this barrier limits parallel computing.
-which limits parallel computing.
-And the execution time of the Map phase is subjected to the slowest map worker, which means that if one of the map workers is slow, then the runtime will need more time.
-%\bluet{If one of a map worker is slow, then the runtime of MapReduce will be need more time.}  
-What's more, it is worth menthion that the user-defined map functions are usually computation-intensive while the Reduce phase is memory-intensive. Thus, the serialization of the Map and Reduce phase is bad for the utilization of system hardware resource.
+
 %barrier不利于资源的利用
 %由于map和reduce阶段之间存在一个barrier，只有当map worker全部结束之后，reduce才开始工作，这种严格的barrier不利于并发，并且，如果其中一个map worker花费太多时间，会让真个的运行时间变长，另一方面，由于map 是computition-intensive，而reduce是memory-intensive，Map和Reduce阶段的串序执行，不利于硬件资源的利用。
 
@@ -209,7 +217,7 @@ What's more, it is worth menthion that the user-defined map functions are usuall
 To aviod the aforementioned issues, a novel MapReduce model, \myds,  is proposed in this paper,
 %employ/exploit/utilize/use
 which exploits the producer-consumer model to break barrier and adopts a new thread program model to reduce lock contending.
-The implementation details of \myds are presented in Section \label{sec:design} and Section \label{sec:runtime}, respectively.  
+The implementation details of \myds are presented in Section \ref{sec:design} and Section \ref{sec:runtime}, respectively.  
 
 
 
