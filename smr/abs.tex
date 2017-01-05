@@ -15,7 +15,7 @@ However, evaluation results show that Phoenix scales worse on a 32-core system.
 This paper focuses on improving Phoenix in terms of scalability and performance.
 First, we analyze some important roadblocks that limit scaling of the Phoenix runtime on shared-memory systems.
 %we analyze the limitations of scalability and performance. 
-Then, we propose a novel multithreaded model which isolates memory between threads by default and provides the unbundary-channel for communicating between threads --\myth (Scalable Thread).
+Then, we propose a novel multithreaded model --\myth (Scalable Thread), which isolates memory between threads by default and provides an unbundary-channel for communicating between threads.
 Based on \myth, we design a scalable mapreduce \myds, which employs a new producer-consumer model for pipelining Map and Reduce phase.
 %MapReduce library, \myds, which is based on a scalable thread library, \myth.
 %Finally, we evaluate \myds on a 32 CPU cores processor and the result demonstrates that  applications, like \codet{histgram}, \codet{word\_count} and \codet{pca}, can achieve better scalability and performance than Phoenix.
