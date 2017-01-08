@@ -3,7 +3,7 @@
 In this section, we will review the MapReduce programming
 model and detail the salient features of Phoenix, 
 an implementation of MapReduce for multicore.
-Then the limitation of Phoenix in the aspect of performance is analyzed.
+%Then the limitation of Phoenix in the aspect of performance is analyzed.
 %讨论Phoenix的局限与不足
 
 \subsection{MapReduce Programing Model}
@@ -42,9 +42,8 @@ two strategies must be carried out to avoid lock contention costs.
     \label{fig:phoenix:intermediate}
 \end{figure}
 
-By adopting above strategies, Phoenix effectively reduce lock contention costs in applications. 
-However, These strategies limit the performance of Phoenix.
-We will detail in next Section. 
+By adopting above strategies, applications programming with Phoenix can effectively reduce lock contention costs. 
+However, these strategies limit the performance of Phoenix, which will be described in next Section. 
 
 \section{Analysis of Phoenix}
 %Phoenix demonstrates tha applications that fit the MapReduce model can perform competitively with parallel code using Pthreads.
@@ -73,23 +72,23 @@ Therefore, we evaluate the scalability of Phoenix built with jemalloc, denoted a
 Figure \ref{fig:phoenix:speedup:jemalloc} illustrates the speedup of Phoenix built with jemalloc.
 We observe that applications scale well when the core count increases from 1 to 8.
 However, when the core count increases from 8 to 16 to 32, the speedup sharply degrades for \codet{wc} and from 16 to 32 cores for the other applications.
-The results indicate that in spite of using the scalable memory allocator, Phoenix can not scale up to 16 cores.
+The results indicate that in spite of utilizing the scalable memory allocator, Phoenix can not scale up to 16 cores.
 
 In order to analyze the limited scalability behavior, Linux perf is exploited to collect execution time information of hot function. 
-We note that the map function is the hottest function with less cores, while \_\_ticket\_spin\_lock will become the hottest function with more cores.
-\_\_ticket\_spin\_lock is a type of spinlock which is caused by the contention on the shared structure in Linux kernel.
-In order to specially explore the impact of spinlock in Phoenix, we collect the execution time percent of \_\_ticket\_spin\_lock on each benchmark from 1 to 32 cores by Linux perf.
+We note that the map function is the hottest function with less cores, while \lock will become the hottest function with more cores.
+\lock is a type of spinlock which is caused by the contention on the shared structure in Linux kernel.
+In order to specially explore the impact of spinlock in Phoenix, we collect the execution time percent of \lock on each benchmark from 1 to 32 cores by Linux perf.
 
 \begin{figure}[!h!t]  
 	\centering
 	\includegraphics[width=0.45\textwidth]{eps/phoenix_spinlock_jemalloc.eps}
-	\caption{speedup of Phoenix-jemalloc}
+	\caption{\lock percent of applications in Phoenix}
 	\label{fig:phoenix:spinlock:jemalloc}
 \end{figure}
 
 As the result shows in Figure\ref{fig:phoenix:spinlock:jemalloc}, the cost of spinlock increases quickly as the cores number cross a specific value (i.e., 8).
 %Specially, for hist with 16 and 32 cores, \_\_ticket\_spin\_lock is the function that has largest execution time percents of 40.15\%  and 71.25\%, respectively. 
-Specially, for \codet{wc} 16 and 32 cores, \_\_ticket\_spin\_lock (i.e., spinlock) is the function that has largest execution time percents of \redt{24.04\%} and \redt{39.91\%}, respectively. 
+Specially, for \codet{wc} 16 and 32 cores, \lock (\ie spinlock) is the function that has largest execution time percents of \redt{24.04\%} and \redt{39.91\%}, respectively. 
 Experiment results demonstrate that Phoenix suffers from serious lock contention when the cores number exceeds 8. 
 That means most of execution time will be used for waiting but not actual computation.
 
@@ -121,18 +120,38 @@ That means most of execution time will be used for waiting but not actual comput
 
 
 \subsection{Contention of the single address space}
-Phoenix utilizes shared-memory multiple threads (i.e., Pthread) to implement parallelism, where all threads of an application share a single address space.
-In most widely used operating systems, such as Linux, an address space consists principally of a set of memory mapping regions.
-Linux use a red-back tree to store these regions. 
+Phoenix utilizes shared-memory multiple threads to implement parallelism, where all threads of an application share a single address space.
+In most widely used operating systems, such as Linux, an address space consists principally of a set of memory mapping regions and a red-back tree is used to store these regions. 
 The red-back enables the operating system to find a particular region quickly when a process has have thousands of memory regions \cite{linux}.
 
-Applications will start as many threads as the system's cores.
-Ideally, adding more threads and cores to the runtime would bring about a linear decrease in execution time.
+Linux provide three address space operations to update and read the memory region: \codet{mmap}, \codet{munmap} and page fault.
+The \codet{mmap} operation creates memory mapping regions and adds them to the region red-back tree, while the \codet{munmap} removes the memory regions from the tree.
+%munmap removes regions from the tree and invalidates entries in the hardware page table structures. 
+Page faults look up the faulting virtual address in the red-back tree to check whether the virtual address is mapped.
+To ensure correct behavior when several threads perform \codet{mmap} and page faults concurrently, Linux use a single read/write semaphore per process (\codet{mmap\_sem}) to serialize \codet{mmap} and page faults.
+Therefore, threads need to acquire the semaphore in write mode before executing the \codet{mmap} operation, while permitting page faults and the other \codet{mmap} operations.
+And page faults will acquire the semaphore in read mode and can proceed with each other in parallel. 
+
+A process can perform only one \codet{mmap} or \codet{munmap} at a time, and these operations will delay page faults. 
+In addition, page faults for different virtual addresses run concurrently, but will block other threads from performing \codet{mmap} or \codet{munmap} operations.
+As a consequence, the performance of multithread applications will be limited by the serialization. 
+The contention is intense when there are large amounts of threads, which will lead to the parallel scalability degradation on the benchmarks.
+
+
+In Phoenix, benchmarks utilize the mmap() system call to read in input data. 
+Once the user passes the pointer of the mmap() region to runtime as an argument, multiple map threads will concurrently cause page faults in the input data when they invoke map functions.
+%All of these page faults need to access the unique mmap\_sem semaphore, which is local to a process address space. 
+Moreover, there are many \codet{mmap} operations in memory allocator for dynamic memory management in Phoenix, which will lead to contend for the shared address spaces.
+As indicated in Figure \ref{fig:phoenix:speedup:jemalloc}, Phoenix can not scale as well as expected, when the cores count exceed a value, adding more cores might scale negatively due to the increased time spent in spinlock.
+Experiment call-graph information demonstrates that spinlock is caused by page faults and \codet{mmap} operations.
+
+%Applications will start as many threads as the system's cores in Phoenix.
+%Ideally, adding more threads and cores to the runtime would bring about a linear decrease in execution time.
 %However, the parallel scalability of Phoenix is not ideal.
-However, Phoenix can not scale as well as expected.
-As indicated in Figure \ref{fig:phoenix:speedup:jemalloc}, when the system exceeds its scalability limitation, adding more cores might scale negatively due to the increased time spent in spinlock.
+%However, Phoenix can not scale as well as expected.
+
 %As more cores were added, the benefit was reversed due to the increased time spent in spinlock.
-Call-graph information shows that spinlock is caused by page faults and \codet{mmap} operations.
+
 %That means the time of completing a workload will increase if there are more cores in the system. 
 
 %In order to analyze the limited scalability behavior, Linux perf is exploited to collect execution time information of hot function. 
@@ -162,22 +181,10 @@ Call-graph information shows that spinlock is caused by page faults and \codet{m
 %
 %One reason why Linux uses this single semaphore on the address space is that it needs a red-black tree to guarantee $O$(log$n$) lookup time when a process has many mmap memory regions \cite{linux}.
 
-The \codet{mmap} operation creates memory mapping regions and adds them to the region red-back tree in Linux. 
-%munmap removes regions from the tree and invalidates entries in the hardware page table structures. 
-Page faults look up the faulting virtual address in the red-back tree check whether the virtual address is mapped.
-To ensure correct behavior when several threads perform \codet{mmap} and page faults concurrently, Linux use a single read/write semaphore per process (known as \codet{mmap\_sem}).
-To execute the \codet{mmap} operations, threads first need to acquire the semaphore in write mode, while permitting page faults and the other \codet{mmap} operations.
-Page faults, which acquire the semaphore in read mode, can proceed with each other in parallel. 
 
 
-In Phoenix, benchmarks utilize the mmap() system call to read in input data. 
-Once the user passes the pointer of the mmap() region to runtime as an argument, multiple map threads will concurrently cause page faults in the input data when they invoke map functions.
-%All of these page faults need to access the unique mmap\_sem semaphore, which is local to a process address space. 
-\redt{Although mmap() system call in applications will not cause contention,
-there are mmap operations in memory allocator for heap manage.}
-By using \codet{mmap\_sem}, Linux can serialize mmap operations and page faults, while limiting the scalability of multithread applications.
-The contention is intense when there are large amounts of threads,
-which will lead to the parallel scalability degradation on the benchmarks.
+
+ 
 %As a result, multiple threads concurrently pagefaults will casue contention to the single semaphore.
  
 %The semaphore is a sleep lock and may run into convoying problems,
@@ -187,8 +194,17 @@ which will lead to the parallel scalability degradation on the benchmarks.
 
 
 \subsection{Optimizing opportunities of Phoenix}
+In cluster environment, network bandwidth is the key factor for performance since the map and reduce workers, executed in different machines usually, communicate by the network.
+However, when processing MapReduce applications in multicore environment, the data structures shared by multiple threads, instead of the network, are the major performance bottlenecks.
+% based on applications in Phoenix will naturally suffer from serious contended locks.
+%By using a share-memory threads model, multiple threads in Phoenix need to share the process's address space\cite{linux}.
+There is a single lock for per shared address space inside the operating system’s virtual memory system, which we have discussed in the previous section. 
+As a result, multithreaded applications on many-core processors will naturally suffer from serious contended locks.
+This phenomenon will be common for parallel programming with shared-memory multithreading \cite{clements2013radixvm}.
+
+
 %To avoid lock contention costs when multiple map and reduce workers read/write the shared intermediate data structure, Phoenix adopts two strategies: 
-As described in section \ref{sec:back}, there is a strict barrier between the Map and Reduce phase, requiring that the workers in Reduce phase can be started only when all workers in Map phase has been finished.
+In addition, as described in Section \ref{sec:back}, there is a strict barrier between the Map and Reduce phase, requiring that the workers in Reduce phase can be started only when all workers in Map phase has been finished.
 In spite of avoiding lock contention, the barrier becomes an important roadblocks to  performance of Phoenix. 
 On the one hand, the barrier limits parallel computing.
 %therefore this barrier limits parallel computing.
@@ -197,13 +213,7 @@ The execution time of the Map phase is subjected to the slowest map worker, whic
 %\bluet{If one of a map worker is slow, then the runtime of MapReduce will be need more time.}  
 On the other hand, it is worth mention that the user-defined map functions are usually computation-intensive while the Reduce phase is memory-intensive. Thus, the serialization of the Map and Reduce phase is bad for the utilization of system hardware resource.
 
-In cluster environment, network bandwidth is the key factor for performance since the map and reduce workers, executed in different machines usually, communicate by the network.
-However, when processing MapReduce applications in multicore environment, the data structures shared by multiple threads, instead of the network, are the major performance bottlenecks.
-% based on applications in Phoenix will naturally suffer from serious contended locks.
-%By using a share-memory threads model, multiple threads in Phoenix need to share the process's address space\cite{linux}.
-There is a single lock for per shared address space inside the operating system’s virtual memory system, which we have discussed in the previous section. 
-As a result, multithreaded applications on many-core processors will naturally suffer from serious contended locks.
-This phenomenon will be common for parallel programming with shared-memory multithreading \cite{clements2013radixvm}.
+
 
 %多核环境下，限制mapreduce性能的关键因素是多线程共享的数据结构。phoenix是基于共享内存的Pthreads多线程编写的，其中每个线程没有自己独立的地址空间，它们需要共享进程的地址空间，在linux中，每个进程地址空间有一个锁对应，当多个线程需要共享时，便会对这个lock竞争，这种现象对于基于共享内存的多线程并行编程非常普片。
 

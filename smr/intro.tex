@@ -17,7 +17,7 @@ In most cases, programmers only need to implement two functions:
 map function which processes the input data and produce  a series of key-value pairs, and reduce function which is used to aggregate values with the same key.
 %Therefore, the programmer dose no need to control synchronization, schedule tasks and fault tolerance manually.
 While initially MapReduce is implemented on clusters, Ranger et al. have implemented a MapReduce library for multicore and multiprocess system--Phoenix\cite{ranger2007phoenix}, which demonstrates the feasibility of running MapReduce applications on shared memory multicore machines.
-After that, Phoenix is heavily optimized by Yoo et al\cite{yoo2009phoenix2} to obtain better scalability on shared-memory system.
+After that, Phoenix is heavily optimized by Yoo et al\cite{yoo2009phoenix2} to obtain better scalability on shared-memory system (\ie Phoenix2).
 Other libraries such as Metis\cite{mao2010metis} , Tiled-mapreduce\cite{chen2010tiled} and MRPhi\cite{lu2013mrphi} attempt to improve performance of Phoenix from various aspects.
 
 
@@ -43,14 +43,14 @@ Other libraries such as Metis\cite{mao2010metis} , Tiled-mapreduce\cite{chen2010
 %Phoenix存在的问题
 Phoenix exploits shared-memory threads (i.e., Pthread library) to implement parallelism, and the runtime binds each worker to a thread.
 Ideally, adding more threads and cores to the system will bring a linear decreasing in execution time.
-However, we note that the optimized Phoenix \cite{yoo2009phoenix2} (i.e., Phoenix2) scales worse on a 32-core Intel 4× Xeon E7-4820 system running Ubuntu 12.04 with kernel 3.2.14.
+However, we note that the optimized Phoenix \cite{yoo2009phoenix2} (i.e., Phoenix2, which is named Phoenix in this paper) scales worse on a 32-core Intel 4× Xeon E7-4820 system running Ubuntu 12.04 with kernel 3.2.14.
 Figure \ref{fig:phoenix:speedup} shows the speedup of the optimized Phoenix runtime.
 % which is measured on our 32-core system (the detail of this system will be given in Section \ref{sec:eval}). 
 We observe that despite the Phoenix runtime is able to process these applications in parallel, none of them scales well beyond 16 cores and most of them actually degrade when the number of cores exceeds 8.
+
 %While the optimized Phoenix\cite{yoo2009phoenix2} performed well on a 256-thread NUMA system, we find that the runtime significantly underperformed on an 4-chip, 32-cores system running x86 Linux.
 %This work focuses on improving Phoenix in the term of scalability and performance from a new perspective.
-Since the Phoenix runtime implements multithreading based on shared-memory Pthreads, all threads of the runtime have to share a single address space, which will lead to contention on the single lock \cite{clements2013radixvm}.
-As a result, the scalability of applications with Phoenix will be limited. 
+ 
 %Multithreaded applications on many-core processors can be bottlenecked by contended locks inside the operating system’s virtual memory system.
 % where all threads of an application share a single address space, shared address space has a cost, which will limit the scalability of these applications.
  
@@ -94,7 +94,8 @@ As a result, the scalability of applications with Phoenix will be limited.
 
 %我们如何解决这个问题
 %为了改进Phoenix存在的这些问题，我们提出了一个scalable mapreduce库，它即具有较好的性能，且具有较好的scalability.
-
+Since the Phoenix runtime implements multithreading based on shared-memory Pthreads, all threads of the runtime have to share a single address space, which will lead to contention on the single lock \cite{clements2012concurrent}.
+As a result, the scalability of applications with Phoenix will be limited.
 %To remedy the above problems, we propose a modified MapReduce architecture in which Map and Reduce phase are pipelined to improve the performance, while preserving the programming interfaces of previous MapReduce frameworks.
 To remedy the problems mentioned above, we design a modified MapReduce framework with preserving the programming interfaces of previous MapReduce.
 Firstly, we propose a scalable thread libray (\myth).

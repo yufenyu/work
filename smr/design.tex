@@ -1,7 +1,7 @@
-\section{A Novel Thread Model --- \myth}
+\section{A Novel Thread Model}
 \label{sec:design}
 %这一部分，首先，我们将详细分析Phoenix较差scalability的根本原因，然后针对Phoenix scalability存在的challenge，我们提出可行的解决方案，即构造一种具有较好scalability的thread model。然后详细解释这种新的线程模型的详细设计方案，最后具体的实验部分在section 6
-In this section, we present a new thread model (\myth), which can support \myds to achieve good scalability.
+In this Section, we present a novel thread model, \myth, which can support \myds to achieve good scalability.
 And then, the detail API of \myth will be given.
 we focus on the design and implementation of an unboundary channel in \myth.
 
@@ -148,11 +148,11 @@ we focus on the design and implementation of an unboundary channel in \myth.
 \subsection{Scalable thread library}
 %这一部分，我们不提生产消费模型，
 %为什么要进行地址空间隔离，通过新的线程模型，我们实现了地址空间隔离，隔离之后有什么好处？相比Phoenix，我们这种新的模型会不会带来开销。
-
-Our goal is to enable the page faults to be scalable for many cores.
+Our goal is to enable page faults to run concurrently with \codet{mmap} and \codet{munmap} operations and consequently to eliminate contention on the per-process read/write lock.
+%Our goal is to enable the page faults to be scalable for many cores and eliminate the contention of the 
 There are some ways to achieve this target. 
 For example, Corey\cite{boyd2008corey} is a scalable operating system for multicore;
-Clements et.al. proposed a scalable address spaces by using RCU balanced trees \cite{Clements2012Scalable};
+Clements et.al. proposed a scalable address spaces by using RCU balanced trees \cite{clements2012concurrent};
 Andi et.al think process has a better scalability than thread since the process needs not to share the address space with the other processes\cite{Andi2009lmulticore}.
 %applications use processes instead of threads can avoid a single shared address space
 However, modifying operation system is impracticable and employing the process rather than the thread will make sharing become complicated. 
@@ -171,11 +171,11 @@ In order to provide a practicable and simple solution, a key problem to be solve
 %With this target, we propose a new thread programming model \myth(Scalable thread).
 %We propose a new thread programming model to support efficient pipeline parallelism.
 %To address this issue and achieve our goal, we propose a new thread programming model \myth(Scalable thread), which is written in C.
-To address the problem and achieve our goal, we propose a novel thread programming model \myth (Scalable thread) with better scalability, supporting scalable MapReduce (\myds) compatibly.
+To address the problem and achieve our goal, we propose a novel thread programming model \myth with better scalability, supporting scalable MapReduce compatibly.
 %will be presented in this subsection.
 There are two key points in the design of \myth.
 Firstly, we confine the threads in \myth to run in separate memory spaces to avoid the contention.
-It means that threads in \myth have their local \codet{mmap\_sem} and eliminate the contention of the single semaphore with others thread.
+Therefore, threads in \myth have their local \codet{mmap\_sem} and eliminate the contention of the single semaphore with others thread.
 Secondly, when using the separate memory spaces, communication will be challenging since the threads in \myth can not directly communicate with the other threads like thread based on share space.
 So, we give a \chan for the threads to communicate with the others in \myth. 
 %Threads in Pthreads share the address space of the process that created it, 
