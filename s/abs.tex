@@ -1,0 +1,27 @@
+\begin{abstract}
+Although the multicore chips have been widely used, utilizing multicore sources is still  a challenging task due to the difficulties of parallel programming.
+Traditional parallel programming techniques require the programmer to manually manage many details, such as synchronization, load balance.
+%solve many details of design challenge.
+%The programmers need to manually manage many details, such as synchronization, load balance, by using the traditional parallel programming techniques. 
+%while designing and implementing efficient, simply parallel programming model is challenging because of many details of design challenges.
+%Traditional parallel programming techniques like Pthreads and OpenMPI leave programmers solving many details of design challenge.
+By automatically managing concurrency, MapReduce, a simple and elegant programming model, alleviates the burden of programmer. 
+Phoenix, a MapReduce library for multicore and multiprocess, demonstrates that applications written with MapReduce framwork can get competitive scalability and performance in comparison to those written with Pthreads.
+%Nevertheless, implementing such runtime systems for large-scale, shared-memory systems can be challenging.
+%And it shows that MapReduce is a promising model for scalable performance on mulitcore and multiprocess.
+%And applications written with MapReduce framwork have competitive scalability and performance comparied to those written with Pthreads.
+However, evaluation results show that Phoenix scales worse on a 32-core system.
+
+This paper focuses on improving Phoenix in terms of scalability and performance.
+First, we analyze some critical factors that limit the Phoenix runtime, such as contending for a shared address space per process and existing of the barrier between Map and Reduce phase.
+%we analyze the limitations of scalability and performance. 
+Then, we propose a novel multithreaded model, \myth, which avoids the contention through providing the isolated address spaces between threads.
+Based on \myth, we design a scalable mapreduce, \myds, which breaks the barrier and improves the performance by adopting a new producer-consumer model.
+% for pipelining Map and Reduce phase.
+%MapReduce library, \myds, which is based on a scalable thread library, \myth.
+%Finally, we evaluate \myds on a 32 CPU cores processor and the result demonstrates that  applications, like \codet{histgram}, \codet{word\_count} and \codet{pca}, can achieve better scalability and performance than Phoenix.
+%Finally, we evaluate \myds on a 32 CPU cores processor and the result shows performance improvements , applications like \codet{histgram}, \codet{word\_count} and \codet{pca}, has
+Finally, the experiments show that \myds can achieve better scalability and performance than Phoenix for \codet{histgram}, \codet{word\_count} and \codet{pca}.
+Specially, performance improvements range from 9.0X to 26.7X when the number of cores is 32.
+
+\end{abstract}
