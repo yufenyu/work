@@ -1,0 +1,35 @@
+\subsection{twin-and-diff}
+DMR中有两个应用程序需要使用到Twin-and-diff机制
+
+1.matrix\_multiply:该应用程序的map()函数，处理输入数据，并将结果直接存放于最终结果data.output中，data.output指向主线程master的heap区域中一块空间；
+如果master与slaver采用共享堆，多个线程会共享该区域，mapreduce计算结束之后，data.output便会收集各个线程的局部结果。
+  \begin{lstlisting}
+    data->output[x_loc*data->matrix_len + i] = value;//data
+  \end{lstlisting}
+但DMR中，由于采用进程模拟线程，各线程间是地址隔离的，heap是私有的，因此主线程master的data.output无法收集到各个slaver的处理结果
+
+
+Twin-diff
+
+
+\subsubsection{详细设计方案}
+1.scope的范围保证page对齐，未填满的部分，0填充；
+未保护的区域从下一个页开始分配，这样做的目的是：避免多余的保护；
+如果不需要保护的对象落入保护区，可能造成不必要的开销，甚至影响结果的正确性
+
+2.多次迭代，scope是全局变量，master在进行下次的mapreduce时，并不会清空scope的
+内容，保护的范围依然是第一次调用之前保护的范围
+如果重新设置，错误，而且heap allocator可能会使用之前释放的heap空间
+
+3.对于application中没有heap共享对象时，无需进行protect，无需进行twin-and-diff，
+application不会触发malloc,spmc\_s.heap=NULL;
+
+因此在twin\_dif.c中，需要判断scope==NULL的情况，即无需进行twin-and-diff
+
+\subsubsection{TODO}
+父进程中给出保护范围<start, end>，通常是整个master的heap
+子进程在保护区域的时候，不仅仅需要保护父进程的保护区域，同时还需要保护其祖先传递给它的地址范围
+这两个范围线性地址空间，可能不连续，那么孙子进程就需要保护多块地址空间
+
+\subsubsection{bug记录}
+snapshot\_init()备份的应该是产生pagefault的页，而不是从fva开始的页，否则比对的时候两者不一致，这将导致结果错误

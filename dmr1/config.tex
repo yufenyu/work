@@ -1,0 +1,61 @@
+\subsection{环境参数}
+\subsubsection{编译选项}
+1.定义一个编译参数xxx，编译时开启的方式如下：
+\begin{lstlisting}
+  make xxx=1
+\end{lstlisting}
+多个参数可组合
+\begin{lstlisting}
+  make xxx=1 yyy=1
+\end{lstlisting}
+
+2.DMR中的编译参数如下：
+\begin{itemize}
+  \item combiner:定义该参数，则开启combiner；默认情况下关闭 
+  \item array:定义该参数，则采用数组实现的buffer；默认情况下使用hash表实现的buffer
+  \item nosort:定义该参数，在hash表实现的buffer中key数组无需排序，并采用普通查找法；
+  默认情况下排序，采用折半查找
+  \item ncores:可以定义不同核数的版本；默认为32核
+\end{itemize}
+
+
+3.不同应用程序的编译选项\\
+针对五个应用程序，DMR相比phoenix具有较好性能的策略如表\ref{dmr_strategy}所示
+\begin{table}[htbp]
+\caption{不同应用程序最佳策略选择}
+\label{dmr_strategy}
+\begin{tabular}{|l|l|}
+\hline
+application & dmr strategy\\
+\hline
+histogram & no combiner array buffer\\
+\hline
+linear\_regression & combiner hash buffer\\
+\hline
+string\_match & no combiner hash buffer\\               
+\hline
+word\_count & no combiner array buffer\\
+\hline
+pca & combiner hash buffer \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\subsubsection{DMR需要的dlinux运行参数}
+当应用程序的数据集较大时，需要改变dlinux中的参数，才能正确运行
+\begin{itemize}
+  \item 调整改变EMEM的大小:smpc.h
+\begin{lstlisting}
+#define EMEM_NPAGE  (1<<22) // 8G->16G
+\end{lstlisting}
+  \item 调整channel和元数据的大小：/libspmc/inc/spmc\_chan.h
+\begin{lstlisting}
+#define CHAN_MAXSHIFT   17  // channel size: 512KB ->128K
+#define SPMC_METASIZE   (1<<23) // channel metadata size: 4MB->8MB
+\end{lstlisting}
+  \item 调整heap的小小：spmc\_malloc.c
+\begin{lstlisting}
+#define SPMC_HEAP_SIZE      (((uint64_t)PAGE_SIZE << 22)) // 4MB->16MB
+\end{lstlisting}
+\end{itemize}

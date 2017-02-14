@@ -1,0 +1,20 @@
+ _raw_spin_lock_irq
+|
+|--99.66%
+| rwsem_down_failed_common
+|  |--89.82%
+|  |   rwsem_down_read_failed
+|  |      call_rwsem_down_read_failed
+|  |      do_page_fault
+|  |      page_fault
+|  |          
+|   --10.18%
+|      rwsem_down_write_failed
+|         call_rwsem_down_write_failed
+|         sys_mmap_pgoff
+|         sys_mmap
+|         system_call
+|         mmap64
+ --0.34%
+
+

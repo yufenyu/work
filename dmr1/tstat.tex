@@ -1,0 +1,104 @@
+\subsection{插桩收集DMR时间信息说明}
+为了详细分析DMR执行过程中各阶段的时间开销，我们对DMR进行插桩
+\begin{description}
+  \item[代码位置:] git库dmr-1.0branch
+  \item[commit:] 26b7c9a7193d9e4de8e0679ef291b37238dbf788
+  \item[源文件:] src/dmr\_stat.c, src/inc/dmr\_stat.h, inc/dmr\_wrapfuns.h(配置文件)
+\end{description}
+
+\subsubsection{重要的全局变量和数据结构}
+1.结构体
+\begin{lstlisting}
+typedef struct dmr_stat {
+#ifdef DMR_TIMING
+    int tid;
+    double runtime;
+    double tstart[CALLLAST];
+    // time and counts of syscall/lib function calls
+    double calltime[CALLLAST];
+    uint64_t ncalls[CALLLAST];
+#endif
+} dmr_stat_t;
+\end{lstlisting}
+dmr\_stat\_t中tstart[id]记录每次运行id函数时的开始时间，calltime[id]记录id的总运行时间，ncalls[id]记录id被调用的次数
+
+2.全局变量
+\begin{lstlisting}
+dmr_stat_t *timeinfo = NULL;
+dmr_stat_t *dmr_s_tstat = NULL;
+\end{lstlisting}
+timeinfo用于存放所有线程的时间信息，在map,reduce中，默认情况下map线程数等于reduce线程数，另加master线程，因此初始化时，设置(MAX\_THREADS * 2 + 1)个，并使用MAP\_SHARE的mmap，保证多个线程都可以都可以修改该变量。
+
+dmr\_s\_tstat：每个线程都拥有一个该全局变量，用于指向timeinfo[TID]的位置，每个线程在运行前，调用init\_
+\begin{lstlisting}
+  void init_timeinfo()
+{
+#ifdef DMR_TIMING
+    int threads = MAX_THREADS * 2 + 1;
+    timeinfo = (dmr_stat_t *)mmap(NULL,
+                    sizeof(dmr_stat_t) * threads,
+                    PROT_READ|PROT_WRITE,
+                    MAP_SHARED|MAP_ANONYMOUS,
+                    -1, 0);
+    /* for master */
+    init_dmr_tstat(0); 
+    //printf("dmr_s_tstat=%p\n", dmr_s_tstat);
+#endif
+}
+\end{lstlisting}
+注意以下几点：
+\begin{enumerate}
+  \item spmc\_set\_copyargs()是在map\_reduce()之前被调用，为保证其中的DMR\_MALLOC()收集时间信息时，
+  不出现指针为空的segment fault，需要提前调用init\_timeinfo设置timeinfo
+  \item 为了收集master的完整时间信息，需要在init\_timeinfo()中调用init\_dmr\_tstat(0)，
+  因为在spmcenv()调用之前，无法通过init\_dmr\_tstat(TID)来设置
+  \item 最后在结束env\_fini()中timeinfo=NULL，因为有些pca和Kmeans是多次map\_reduce()的计算
+\end{enumerate}
+
+\subsubsection{内存时间的收集}
+1.DMR中涉及动态内存的操作:malloc, calloc, realloc, free，使用宏定义来替换，
+方便收集不用类型的操作使用的malloc的时间开销
+\begin{lstlisting}
+#define DMR_MALLOC(a, b) mem_malloc(a, b)
+#define DMR_FREE(a, b) mem_free(a, b)
+#define DMR_CALLOC(a, b, c) mem_calloc(a, (size_t)b, (size_t)c)
+#define DMR_REALLOC(a, b, c) mem_realloc(a, (void *)b, (size_t)c)
+\end{lstlisting}
+
+2.配置文件中
+\begin{lstlisting}
+  mmxx(TIME, KV, mem_kv, 9) //define MEM_KV
+\end{lstlisting}
+mmxx()用于定义一个MEM\_KV标识符(枚举类型)，在应用程序中DMR\_MALLOC(MEM\_KV, sizeof(int) * len)来统计
+
+3.插桩
+\begin{lstlisting}
+void *mem_malloc (ID_t type, size_t size)
+{
+    MEM_BEGIN(type);//memory time
+    void *temp = malloc (size);
+    assert(temp);
+    MEM_END(type);//memory time
+
+    return temp;
+}
+\end{lstlisting}
+使用MEM\_BEGIN()，MEM\_END()进行插桩收集数据
+
+\subsubsection{时间的收集}
+收集时间的信息，最终会存入到dmr\_tstat.csv文件中
+1.配置文件中
+\begin{lstlisting}
+fnxx(TIME, map, map, 1)
+\end{lstlisting}
+
+2.插桩
+\begin{lstlisting}
+        BEGIN_TIMING(map);
+        /* do map()*/ 
+        map_worker_do_task(env, tid);
+        END_TIMING(map);
+\end{lstlisting}
+
+
+

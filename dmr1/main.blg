@@ -1,0 +1,54 @@
+This is BibTeX, Version 0.99c (TeX Live 2009/Debian)
+The top-level auxiliary file: main.aux
+The style file: unsrt.bst
+Database file #1: os.bib
+Database file #2: pa.bib
+Database file #3: my.bib
+Repeated entry---line 2 of file my.bib
+ : @inproceedings{Borkar2007core
+ :                              ,
+I'm skipping whatever remains of this entry
+Warning--I didn't find a database entry for ""
+Warning--empty journal in Borkar2007Thousand
+You've used 8 entries,
+            1791 wiz_defined-function locations,
+            491 strings with 4778 characters,
+and the built_in function-call counts, 1981 in all, are:
+= -- 185
+> -- 56
+< -- 4
++ -- 23
+- -- 15
+* -- 93
+:= -- 283
+add.period$ -- 26
+call.type$ -- 8
+change.case$ -- 8
+chr.to.int$ -- 0
+cite$ -- 9
+duplicate$ -- 114
+empty$ -- 215
+format.name$ -- 15
+if$ -- 482
+int.to.chr$ -- 0
+int.to.str$ -- 8
+missing$ -- 7
+newline$ -- 43
+num.names$ -- 8
+pop$ -- 45
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 0
+skip$ -- 63
+stack$ -- 0
+substring$ -- 107
+swap$ -- 41
+text.length$ -- 4
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 0
+warning$ -- 1
+while$ -- 18
+width$ -- 9
+write$ -- 90
+(There was 1 error message)

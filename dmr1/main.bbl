@@ -1,0 +1,48 @@
+\begin{thebibliography}{1}
+
+\bibitem{borkar2007core}
+Shekhar Borkar.
+\newblock Thousand core chips: A technology perspective.
+\newblock In {\em \bibconf[44th]{DAC}{Annual Design Automation Conference}},
+  pages 746--749, New York, NY, USA, 2007. ACM.
+
+\bibitem{gloger1997ptmalloc}
+Wolfram Gloger.
+\newblock Dynamic memory allocator implementations in linux system libraries,
+  May 2006.
+\newblock http://www.malloc.de/en/index.html.
+
+\bibitem{evans2006jemalloc}
+Jason Evans.
+\newblock A scalable concurrent malloc (3) implementation for {FreeBSD}.
+\newblock In {\em BSDCan Conference}, Ottawa, Canada, 2006.
+
+\bibitem{de2009performance}
+Arnaldo~Carvalho de~Melo.
+\newblock Performance counters on linux.
+\newblock In {\em Linux Plumbers Conference}, 2009.
+
+\bibitem{mao2010metis}
+Yandong Mao, Robert Morris, and M.~Frans Kaashoek.
+\newblock Optimizing mapreduce for multicore architectures.
+\newblock {\em Computer Science and Artificial Intelligence Laboratory,
+  Massachusetts Institute of Technology, Tech. Rep}, 2010.
+
+\bibitem{Borkar2007Thousand}
+Shekhar Borkar.
+\newblock Thousand core chipsa technology perspective.
+\newblock pages 746--749, 2007.
+
+\bibitem{talbot2011phoenix++}
+Justin Talbot, Richard~M. Yoo, and Christos Kozyrakis.
+\newblock Phoenix++: Modular mapreduce for shared-memory systems.
+\newblock In {\em \bibconf[2nd]{MapReduce}{International Workshop on MapReduce
+  and Its Applications}}, pages 9--16, New York, NY, USA, 2011. ACM.
+
+\bibitem{lu2013mrphi}
+Mian Lu, Lei Zhang, Huynh~Phung Huynh, et~al.
+\newblock Optimizing the {MapReduce} framework on {Intel Xeon Phi} coprocessor.
+\newblock In {\em \bibbrev{BigData Congress '2013}{IEEE International
+  Conference on Big Data}}, pages 125--130, October 2013.
+
+\end{thebibliography}

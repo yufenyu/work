@@ -1,0 +1,47 @@
+
+     histogram  [kernel.kallsyms]   [k] _raw_spin_lock_irq
+            |
+            --- _raw_spin_lock_irq
+               |          
+               |--85.76%-- rwsem_down_read_failed
+               |          call_rwsem_down_read_failed
+               |          |          
+               |          |--100.00%-- __do_page_fault
+               |          |          do_page_fault
+               |          |          page_fault
+               |          |          |          
+               |          |          |--92.65%-- hist_map
+               |          |          |          |          
+               |          |          |          |--100.00%-- (nil)
+               |          |          |           --0.00%-- [...]
+               |          |          |          
+               |          |          |--6.77%-- emit_intermediate
+               |          |          |          |          
+               |          |          |          |--99.99%-- 0x2000005555
+               |          |          |           --0.01%-- [...]
+               |          |           --0.58%-- [...]
+               |           --0.00%-- [...]
+               |          
+               |--14.17%-- rwsem_down_write_failed
+               |          call_rwsem_down_write_failed
+               |          |          
+               |          |--99.79%-- SyS_mprotect
+               |          |          tracesys
+               |          |          mprotect
+               |           --0.21%-- [...]
+                --0.07%-- [...]
+
+ _raw_spin_lock_irq
+|
+|--85.76%
+| rwsem_down_read_failed
+|    call_rwsem_down_read_failed
+|      do_page_fault
+|        page_fault
+|
+|--14.17%
+| rwsem_down_write_failed
+|    call_rwsem_down_write_failed
+|        SyS_mprotect
+|          mprotect
+ --0.34%
